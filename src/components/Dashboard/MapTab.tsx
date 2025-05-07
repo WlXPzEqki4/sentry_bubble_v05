@@ -255,7 +255,7 @@ const MapTab: React.FC = () => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 min-h-[800px]">
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Global Visualization</h2>
         <Toggle 
@@ -276,9 +276,9 @@ const MapTab: React.FC = () => {
         Interactive 3D globe visualization. Drag to rotate, scroll to zoom.
       </p>
       
-      <ResizablePanelGroup direction="horizontal" className="min-h-[700px] rounded-lg border">
+      <ResizablePanelGroup direction="horizontal" className="border rounded-lg">
         <ResizablePanel defaultSize={75}>
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-[500px]">
             <div ref={mapContainer} className="absolute inset-0" />
           </div>
         </ResizablePanel>
@@ -286,7 +286,7 @@ const MapTab: React.FC = () => {
         <ResizableHandle withHandle />
         
         <ResizablePanel defaultSize={25}>
-          <div className="h-full flex flex-col bg-white">
+          <div className="h-[500px] flex flex-col bg-white">
             <div className="p-4 border-b">
               <h3 className="font-medium">African Countries</h3>
               <p className="text-xs text-gray-500 mt-1">Click on Sudan to focus the map</p>
