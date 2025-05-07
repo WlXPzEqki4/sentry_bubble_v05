@@ -30,11 +30,18 @@ const MapTab: React.FC = () => {
     
     // Turn off rotation when Sudan is selected to focus on the country
     if (country.name === 'Sudan') {
+      // First disable rotation so it won't interfere with the country focus
       setRotationEnabled(false);
+      
+      // Then set the selected country after a very short delay to ensure 
+      // rotation is fully disabled before the map tries to focus
+      setTimeout(() => {
+        setSelectedCountry(country);
+      }, 50);
+    } else {
+      // For other countries, just update the selection normally
+      setSelectedCountry(country);
     }
-    
-    // Set the selected country after rotation is disabled
-    setSelectedCountry(country);
   };
 
   return (

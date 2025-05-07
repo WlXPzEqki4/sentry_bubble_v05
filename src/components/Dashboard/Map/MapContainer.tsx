@@ -20,6 +20,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState<string | null>(null);
   const previousCountryRef = useRef<string | null>(null);
+  const countryAnimationCompleted = useRef<boolean>(false);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -182,25 +183,37 @@ const MapContainer: React.FC<MapContainerProps> = ({
     };
   }, [rotationEnabled, mapLoaded]);
 
-  // Effect to fly to selected country - now separate from the map initialization
+  // Effect to fly to selected country
   useEffect(() => {
-    if (!map.current || !mapLoaded || !selectedCountry) return;
+    if (!map.current || !mapLoaded || !selectedCountry) {
+      return;
+    }
     
-    // Only execute the flyTo if the country has changed
-    if (selectedCountry.name === 'Sudan' && previousCountryRef.current !== 'Sudan') {
-      console.log("Flying to Sudan:", selectedCountry.coordinates);
-      const [longitude, latitude] = selectedCountry.coordinates;
+    // Focus on Sudan when selected
+    if (selectedCountry.name === 'Sudan') {
+      const currentCountry = selectedCountry.name;
       
-      map.current.flyTo({
-        center: [longitude, latitude],
-        zoom: 5,
-        pitch: 30,
-        duration: 3000,
-        essential: true
-      });
-      
-      // Update the previous country ref
-      previousCountryRef.current = selectedCountry.name;
+      // Check if we need to perform the animation
+      if (previousCountryRef.current !== currentCountry || !countryAnimationCompleted.current) {
+        console.log("Flying to Sudan:", selectedCountry.coordinates);
+        const [longitude, latitude] = selectedCountry.coordinates;
+        
+        // Use flyTo for smooth animation to the country
+        map.current.flyTo({
+          center: [longitude, latitude],
+          zoom: 5,
+          pitch: 30,
+          duration: 3000,
+          essential: true
+        });
+        
+        // Mark that we've completed this animation for this country
+        previousCountryRef.current = currentCountry;
+        countryAnimationCompleted.current = true;
+      }
+    } else {
+      // Reset animation flag when a different country is selected
+      countryAnimationCompleted.current = false;
     }
   }, [selectedCountry, mapLoaded]);
 
