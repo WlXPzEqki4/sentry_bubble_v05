@@ -106,12 +106,12 @@ const MapTab: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 h-[calc(100vh-12rem)]">
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 min-h-[800px]">
       <h2 className="text-xl font-semibold mb-4">Global Visualization</h2>
       <p className="text-sm text-gray-500 mb-6">
         Interactive 3D globe visualization. Drag to rotate, scroll to zoom.
       </p>
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-[700px]">
         <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
       </div>
     </div>
