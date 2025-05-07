@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -18,6 +19,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState<string | null>(null);
+  const previousCountryRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -184,7 +186,8 @@ const MapContainer: React.FC<MapContainerProps> = ({
   useEffect(() => {
     if (!map.current || !mapLoaded || !selectedCountry) return;
     
-    if (selectedCountry.name === 'Sudan') {
+    // Only execute the flyTo if the country has changed
+    if (selectedCountry.name === 'Sudan' && previousCountryRef.current !== 'Sudan') {
       console.log("Flying to Sudan:", selectedCountry.coordinates);
       const [longitude, latitude] = selectedCountry.coordinates;
       
@@ -195,6 +198,9 @@ const MapContainer: React.FC<MapContainerProps> = ({
         duration: 3000,
         essential: true
       });
+      
+      // Update the previous country ref
+      previousCountryRef.current = selectedCountry.name;
     }
   }, [selectedCountry, mapLoaded]);
 

@@ -27,12 +27,14 @@ const MapTab: React.FC = () => {
 
   const handleCountryClick = (country: typeof africanCountries[0]) => {
     console.log("Country selected:", country.name);
-    setSelectedCountry(country);
     
-    // Only allow Sudan to be selected - and turn off rotation
+    // Turn off rotation when Sudan is selected to focus on the country
     if (country.name === 'Sudan') {
       setRotationEnabled(false);
     }
+    
+    // Set the selected country after rotation is disabled
+    setSelectedCountry(country);
   };
 
   return (
