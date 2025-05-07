@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -181,11 +180,12 @@ const MapContainer: React.FC<MapContainerProps> = ({
     };
   }, [rotationEnabled, mapLoaded]);
 
-  // Effect to fly to selected country
+  // Effect to fly to selected country - now separate from the map initialization
   useEffect(() => {
     if (!map.current || !mapLoaded || !selectedCountry) return;
     
     if (selectedCountry.name === 'Sudan') {
+      console.log("Flying to Sudan:", selectedCountry.coordinates);
       const [longitude, latitude] = selectedCountry.coordinates;
       
       map.current.flyTo({
