@@ -20,8 +20,10 @@ const MapContainer: React.FC<MapContainerProps> = ({
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState<string | null>(null);
   const previousCountryRef = useRef<string | null>(null);
-  const countryAnimationCompleted = useRef<boolean>(false);
+  const isAnimatingToCountry = useRef<boolean>(false);
+  const rotationIntervalId = useRef<number | null>(null);
 
+  // Initialize map only once
   useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -98,22 +100,37 @@ const MapContainer: React.FC<MapContainerProps> = ({
           console.error("Error removing map:", e);
         }
       }
+      
+      // Clear any ongoing intervals
+      if (rotationIntervalId.current !== null) {
+        clearInterval(rotationIntervalId.current);
+      }
     };
   }, [onMapLoaded]);
 
-  // Separate effect for handling rotation that depends on rotationEnabled state
+  // Handle rotation separately from map initialization
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
     
+    // Clear any previous rotation interval
+    if (rotationIntervalId.current !== null) {
+      clearInterval(rotationIntervalId.current);
+      rotationIntervalId.current = null;
+    }
+    
+    if (!rotationEnabled) {
+      return; // Exit early if rotation is disabled
+    }
+    
     // Rotation animation settings
-    const secondsPerRevolution = 360; // Slower initial rotation (6 minutes per revolution)
+    const secondsPerRevolution = 360; // Slower initial rotation
     const maxSpinZoom = 5;
     const slowSpinZoom = 3;
     let userInteracting = false;
     
     // Spin globe function
     function spinGlobe() {
-      if (!map.current) return;
+      if (!map.current || isAnimatingToCountry.current) return;
       
       const zoom = map.current.getZoom();
       if (rotationEnabled && !userInteracting && zoom < maxSpinZoom) {
@@ -139,16 +156,16 @@ const MapContainer: React.FC<MapContainerProps> = ({
     
     const handleMouseUp = () => {
       userInteracting = false;
-      if (rotationEnabled) spinGlobe();
+      if (rotationEnabled && !isAnimatingToCountry.current) spinGlobe();
     };
     
     const handleTouchEnd = () => {
       userInteracting = false;
-      if (rotationEnabled) spinGlobe();
+      if (rotationEnabled && !isAnimatingToCountry.current) spinGlobe();
     };
 
     const handleMoveEnd = () => {
-      if (rotationEnabled) spinGlobe();
+      if (rotationEnabled && !isAnimatingToCountry.current) spinGlobe();
     };
 
     // Add event listeners
@@ -158,19 +175,19 @@ const MapContainer: React.FC<MapContainerProps> = ({
     map.current.on('touchend', handleTouchEnd);
     map.current.on('moveend', handleMoveEnd);
 
-    // Start spinning if enabled
-    if (rotationEnabled) {
+    // Start spinning if enabled and not animating to a country
+    if (rotationEnabled && !isAnimatingToCountry.current) {
       spinGlobe();
     }
 
     // Set up interval for continuous rotation when enabled
-    const rotationInterval = setInterval(() => {
-      if (rotationEnabled) {
+    rotationIntervalId.current = window.setInterval(() => {
+      if (rotationEnabled && !isAnimatingToCountry.current) {
         spinGlobe();
       }
     }, 1000);
 
-    // Cleanup event listeners and interval
+    // Cleanup event listeners
     return () => {
       if (map.current) {
         map.current.off('mousedown', handleMouseDown);
@@ -179,11 +196,15 @@ const MapContainer: React.FC<MapContainerProps> = ({
         map.current.off('touchend', handleTouchEnd);
         map.current.off('moveend', handleMoveEnd);
       }
-      clearInterval(rotationInterval);
+      
+      if (rotationIntervalId.current !== null) {
+        clearInterval(rotationIntervalId.current);
+        rotationIntervalId.current = null;
+      }
     };
   }, [rotationEnabled, mapLoaded]);
 
-  // Effect to fly to selected country
+  // Dedicated effect just for handling country selection
   useEffect(() => {
     if (!map.current || !mapLoaded || !selectedCountry) {
       return;
@@ -191,11 +212,14 @@ const MapContainer: React.FC<MapContainerProps> = ({
     
     // Focus on Sudan when selected
     if (selectedCountry.name === 'Sudan') {
-      const currentCountry = selectedCountry.name;
-      
-      // Check if we need to perform the animation
-      if (previousCountryRef.current !== currentCountry || !countryAnimationCompleted.current) {
+      // Only fly to Sudan if it's not already the active country
+      // or if we're not currently animating to it
+      if ((previousCountryRef.current !== selectedCountry.name || 
+          !isAnimatingToCountry.current)) {
+        
         console.log("Flying to Sudan:", selectedCountry.coordinates);
+        isAnimatingToCountry.current = true;
+        
         const [longitude, latitude] = selectedCountry.coordinates;
         
         // Use flyTo for smooth animation to the country
@@ -207,13 +231,18 @@ const MapContainer: React.FC<MapContainerProps> = ({
           essential: true
         });
         
-        // Mark that we've completed this animation for this country
-        previousCountryRef.current = currentCountry;
-        countryAnimationCompleted.current = true;
+        // Store the current country and reset the animation flag 
+        // after the animation completes
+        previousCountryRef.current = selectedCountry.name;
+        
+        // Wait for the animation to complete before allowing rotation again
+        setTimeout(() => {
+          isAnimatingToCountry.current = false;
+        }, 3500); // slightly longer than the animation duration
       }
     } else {
-      // Reset animation flag when a different country is selected
-      countryAnimationCompleted.current = false;
+      // If a different country is selected, update the reference
+      previousCountryRef.current = selectedCountry.name;
     }
   }, [selectedCountry, mapLoaded]);
 
