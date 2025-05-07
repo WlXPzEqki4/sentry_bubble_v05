@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { Globe } from 'lucide-react';
 
 interface MapContainerProps {
   rotationEnabled: boolean;
@@ -16,68 +17,91 @@ const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const [mapLoaded, setMapLoaded] = React.useState(false);
+  const [mapError, setMapError] = React.useState<string | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize map with the provided token
-    mapboxgl.accessToken = 'pk.eyJ1IjoiamNkZW50b24yMDUxIiwiYSI6ImNtMzVkZXJudTA5ejkya3B5NDU4Z2MyeHQifQ.aUk4eH5k3JC45Foxcbe2qQ';
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      projection: 'globe',
-      zoom: 1.5,
-      center: [0, 0], // Starting at [0,0] before animation
-      pitch: 0, // Starting with flat view
-    });
-
-    // Add navigation controls
-    map.current.addControl(
-      new mapboxgl.NavigationControl({
-        visualizePitch: true,
-      }),
-      'top-right'
-    );
-
-    // Add atmosphere and fog effects for more realistic 3D appearance
-    map.current.on('style.load', () => {
-      if (!map.current) return;
+    try {
+      console.log("Initializing Mapbox globe...");
       
-      map.current.setFog({
-        color: 'rgb(255, 255, 255)',
-        'high-color': 'rgb(200, 200, 225)',
-        'horizon-blend': 0.2,
+      // Initialize map with the provided token
+      mapboxgl.accessToken = 'pk.eyJ1IjoiamNkZW50b24yMDUxIiwiYSI6ImNtMzVkZXJudTA5ejkya3B5NDU4Z2MyeHQifQ.aUk4eH5k3JC45Foxcbe2qQ';
+      
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/light-v11',
+        projection: 'globe',
+        zoom: 1.5,
+        center: [0, 0], // Starting at [0,0] before animation
+        pitch: 0, // Starting with flat view
       });
-      
-      // Improved animation sequence to focus on Africa after the map loads
-      setTimeout(() => {
+
+      // Add navigation controls
+      map.current.addControl(
+        new mapboxgl.NavigationControl({
+          visualizePitch: true,
+        }),
+        'top-right'
+      );
+
+      // Add atmosphere and fog effects for more realistic 3D appearance
+      map.current.on('load', () => {
+        console.log("Map loaded successfully");
+        setMapLoaded(true);
+        
         if (!map.current) return;
         
-        map.current.flyTo({
-          center: [20, 5], // Approximate center of African continent
-          zoom: 2.8, // Slightly higher zoom to better frame Africa
-          pitch: 20, // Add some pitch for better perspective
-          duration: 6000, // Longer, smoother animation
-          essential: true
+        map.current.setFog({
+          color: 'rgb(255, 255, 255)',
+          'high-color': 'rgb(200, 200, 225)',
+          'horizon-blend': 0.2,
         });
         
-        // Enable rotation with a delay after flyTo animation completes
+        // Improved animation sequence to focus on Africa after the map loads
         setTimeout(() => {
-          if (onMapLoaded) onMapLoaded();
-        }, 7000); // Wait 1 second after the flyTo animation (which takes 6 seconds)
-      }, 2000); // Wait 2 seconds before starting the animation
-    });
+          if (!map.current) return;
+          
+          map.current.flyTo({
+            center: [20, 5], // Approximate center of African continent
+            zoom: 2.8, // Slightly higher zoom to better frame Africa
+            pitch: 20, // Add some pitch for better perspective
+            duration: 6000, // Longer, smoother animation
+            essential: true
+          });
+          
+          // Enable rotation with a delay after flyTo animation completes
+          setTimeout(() => {
+            if (onMapLoaded) onMapLoaded();
+          }, 7000); // Wait 1 second after the flyTo animation (which takes 6 seconds)
+        }, 2000); // Wait 2 seconds before starting the animation
+      });
+
+      map.current.on('error', (e) => {
+        console.error("Mapbox error:", e);
+        setMapError("Error loading map: " + e.error?.message || "Unknown error");
+      });
+    } catch (error) {
+      console.error("Error initializing Mapbox:", error);
+      setMapError("Failed to initialize map");
+    }
 
     // Cleanup function
     return () => {
-      map.current?.remove();
+      if (map.current) {
+        try {
+          map.current.remove();
+        } catch (e) {
+          console.error("Error removing map:", e);
+        }
+      }
     };
   }, [onMapLoaded]);
 
   // Separate effect for handling rotation that depends on rotationEnabled state
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapLoaded) return;
     
     // Rotation animation settings
     const secondsPerRevolution = 360; // Slower initial rotation (6 minutes per revolution)
@@ -155,11 +179,11 @@ const MapContainer: React.FC<MapContainerProps> = ({
       }
       clearInterval(rotationInterval);
     };
-  }, [rotationEnabled]);
+  }, [rotationEnabled, mapLoaded]);
 
   // Effect to fly to selected country
   useEffect(() => {
-    if (!map.current || !selectedCountry) return;
+    if (!map.current || !mapLoaded || !selectedCountry) return;
     
     if (selectedCountry.name === 'Sudan') {
       const [longitude, latitude] = selectedCountry.coordinates;
@@ -172,11 +196,31 @@ const MapContainer: React.FC<MapContainerProps> = ({
         essential: true
       });
     }
-  }, [selectedCountry]);
+  }, [selectedCountry, mapLoaded]);
 
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="absolute inset-0" />
+      
+      {/* Loading and error states */}
+      {!mapLoaded && !mapError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
+          <div className="flex flex-col items-center">
+            <Globe className="h-12 w-12 text-blue-500 animate-pulse mb-2" />
+            <p className="text-gray-600">Loading map...</p>
+          </div>
+        </div>
+      )}
+      
+      {mapError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
+          <div className="text-center p-4 max-w-md">
+            <p className="text-red-600 font-medium mb-2">Map failed to load</p>
+            <p className="text-sm text-gray-600 mb-4">{mapError}</p>
+            <p className="text-xs text-gray-500">Please check your internet connection or try refreshing the page</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

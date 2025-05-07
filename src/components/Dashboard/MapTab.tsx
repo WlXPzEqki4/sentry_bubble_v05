@@ -9,6 +9,7 @@ import { africanCountries } from './Map/africanCountriesData';
 interface SelectedCountry {
   name: string;
   coordinates: number[];
+  flag: string;
 }
 
 const MapTab: React.FC = () => {
@@ -20,10 +21,12 @@ const MapTab: React.FC = () => {
   };
 
   const handleMapLoaded = () => {
+    console.log("Map loaded callback triggered");
     setRotationEnabled(true);
   };
 
   const handleCountryClick = (country: typeof africanCountries[0]) => {
+    console.log("Country selected:", country.name);
     setSelectedCountry(country);
     
     // Only allow Sudan to be selected - and turn off rotation
