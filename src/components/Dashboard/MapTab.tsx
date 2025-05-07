@@ -19,7 +19,7 @@ const MapTab: React.FC = () => {
       projection: 'globe',
       zoom: 1.5,
       center: [0, 0], // Starting at [0,0] before animation
-      pitch: 45,
+      pitch: 0, // Changed from 45 to 0 for a square look
     });
 
     // Add navigation controls
@@ -43,6 +43,7 @@ const MapTab: React.FC = () => {
         map.current?.flyTo({
           center: [20, 5], // Approximate center of African continent
           zoom: 2.5,
+          pitch: 0, // Keep the square look during animation
           duration: 5000, // 5 seconds animation
           essential: true
         });
@@ -111,7 +112,7 @@ const MapTab: React.FC = () => {
       <p className="text-sm text-gray-500 mb-6">
         Interactive 3D globe visualization. Drag to rotate, scroll to zoom.
       </p>
-      <div className="relative w-full h-[700px]">
+      <div className="relative w-full h-[700px] flex items-center justify-center">
         <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
       </div>
     </div>
