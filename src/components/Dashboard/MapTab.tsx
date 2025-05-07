@@ -283,7 +283,7 @@ const MapTab: React.FC = () => {
       
       <ResizablePanelGroup direction="horizontal" className="border rounded-lg">
         <ResizablePanel defaultSize={75}>
-          <div className="relative w-full h-[500px]">
+          <div className="relative w-full h-[600px]">
             <div ref={mapContainer} className="absolute inset-0" />
           </div>
         </ResizablePanel>
@@ -291,7 +291,7 @@ const MapTab: React.FC = () => {
         <ResizableHandle withHandle />
         
         <ResizablePanel defaultSize={25}>
-          <div className="h-[500px] flex flex-col bg-white">
+          <div className="h-[600px] flex flex-col bg-white">
             <div className="p-4 border-b">
               <h3 className="font-medium">African Countries</h3>
               <p className="text-xs text-gray-500 mt-1">Click on Sudan to focus the map</p>
