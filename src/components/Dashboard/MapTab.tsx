@@ -322,7 +322,7 @@ const MapTab: React.FC = () => {
         element: markerNode, 
         anchor: 'bottom'
       })
-        .setLngLat(location.coordinates)
+        .setLngLat(location.coordinates as [number, number]) // Cast to the required tuple type
         .setPopup(
           new mapboxgl.Popup({ offset: 25 }) // Add a popup
             .setHTML(
@@ -358,7 +358,7 @@ const MapTab: React.FC = () => {
       const [longitude, latitude] = country.coordinates;
       
       map.current.flyTo({
-        center: [longitude, latitude], // Explicitly format as [lng, lat] tuple
+        center: [longitude, latitude] as [number, number], // Explicitly cast as [number, number] tuple
         zoom: 5, // Zoom level for country view
         pitch: 30, // Add some pitch for better perspective
         duration: 3000, // Animation duration
