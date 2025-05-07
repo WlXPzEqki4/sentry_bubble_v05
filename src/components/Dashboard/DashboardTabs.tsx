@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, FileText, ClipboardList, Bot, BarChart } from 'lucide-react';
+import { LayoutDashboard, FileText, ClipboardList, Bot, BarChart, Globe } from 'lucide-react';
+import MapTab from '@/components/Dashboard/MapTab';
 import WidgetsTab from '@/components/Dashboard/WidgetsTab';
 import NewsTab from '@/components/Dashboard/NewsTab';
 import AITab from '@/components/Dashboard/AITab';
@@ -56,8 +57,12 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   handleTabChange
 }) => {
   return (
-    <Tabs defaultValue="widgets" className="w-full" onValueChange={handleTabChange}>
+    <Tabs defaultValue="map" className="w-full" onValueChange={handleTabChange}>
       <TabsList className="mb-4">
+        <TabsTrigger value="map" className="gap-2">
+          <Globe className="h-4 w-4" />
+          Map
+        </TabsTrigger>
         <TabsTrigger value="widgets" className="gap-2">
           <LayoutDashboard className="h-4 w-4" />
           Widgets
@@ -79,6 +84,10 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           MDM Analytics
         </TabsTrigger>
       </TabsList>
+      
+      <TabsContent value="map" className="mt-6">
+        <MapTab />
+      </TabsContent>
       
       <TabsContent value="widgets" className="mt-6">
         <WidgetsTab 
