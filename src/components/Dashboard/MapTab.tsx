@@ -240,9 +240,12 @@ const MapTab: React.FC = () => {
       // Turn off rotation when focusing on a country
       setRotationEnabled(false);
       
-      // Fly to Sudan
+      // Fly to Sudan - ensure coordinates are properly typed as LngLatLike
+      // LngLatLike requires [longitude, latitude] as a tuple or LngLat object
+      const [longitude, latitude] = country.coordinates;
+      
       map.current.flyTo({
-        center: country.coordinates,
+        center: [longitude, latitude], // Explicitly format as [lng, lat] tuple
         zoom: 5, // Zoom level for country view
         pitch: 30, // Add some pitch for better perspective
         duration: 3000, // Animation duration
