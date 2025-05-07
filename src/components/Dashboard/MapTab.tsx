@@ -94,7 +94,7 @@ const CountryButton = ({ country, isSelected, onClick }: {
 const MapTab: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [rotationEnabled, setRotationEnabled] = useState(true);
+  const [rotationEnabled, setRotationEnabled] = useState(false); // Start with rotation disabled until animation completes
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,7 +109,7 @@ const MapTab: React.FC = () => {
       projection: 'globe',
       zoom: 1.5,
       center: [0, 0], // Starting at [0,0] before animation
-      pitch: 0, // Changed from 45 to 0 for a square look
+      pitch: 0, // Starting with flat view
     });
 
     // Add navigation controls
@@ -128,15 +128,20 @@ const MapTab: React.FC = () => {
         'horizon-blend': 0.2,
       });
       
-      // Animation to focus on Africa after the map loads
+      // Improved animation sequence to focus on Africa after the map loads
       setTimeout(() => {
         map.current?.flyTo({
           center: [20, 5], // Approximate center of African continent
-          zoom: 2.5,
-          pitch: 0, // Keep the square look during animation
-          duration: 5000, // 5 seconds animation
+          zoom: 2.8, // Slightly higher zoom to better frame Africa
+          pitch: 20, // Add some pitch for better perspective
+          duration: 6000, // Longer, smoother animation
           essential: true
         });
+        
+        // Enable rotation with a delay after flyTo animation completes
+        setTimeout(() => {
+          setRotationEnabled(true);
+        }, 7000); // Wait 1 second after the flyTo animation (which takes 6 seconds)
       }, 2000); // Wait 2 seconds before starting the animation
     });
 
@@ -151,7 +156,7 @@ const MapTab: React.FC = () => {
     if (!map.current) return;
     
     // Rotation animation settings
-    const secondsPerRevolution = 240;
+    const secondsPerRevolution = 360; // Slower initial rotation (6 minutes per revolution)
     const maxSpinZoom = 5;
     const slowSpinZoom = 3;
     let userInteracting = false;
