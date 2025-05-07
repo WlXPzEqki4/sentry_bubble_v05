@@ -53,19 +53,28 @@ const MapTab: React.FC = () => {
       }, 2000); // Wait 2 seconds before starting the animation
     });
 
+    // Cleanup function
+    return () => {
+      map.current?.remove();
+    };
+  }, []);
+
+  // Separate effect for handling rotation that depends on rotationEnabled state
+  useEffect(() => {
+    if (!map.current) return;
+    
     // Rotation animation settings
     const secondsPerRevolution = 240;
     const maxSpinZoom = 5;
     const slowSpinZoom = 3;
     let userInteracting = false;
-    let spinEnabled = rotationEnabled;
-
+    
     // Spin globe function
     function spinGlobe() {
       if (!map.current) return;
       
       const zoom = map.current.getZoom();
-      if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
+      if (rotationEnabled && !userInteracting && zoom < maxSpinZoom) {
         let distancePerSecond = 360 / secondsPerRevolution;
         if (zoom > slowSpinZoom) {
           const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
@@ -78,48 +87,58 @@ const MapTab: React.FC = () => {
     }
 
     // Event listeners for interaction
-    map.current.on('mousedown', () => {
+    const handleMouseDown = () => {
       userInteracting = true;
-    });
+    };
     
-    map.current.on('dragstart', () => {
+    const handleDragStart = () => {
       userInteracting = true;
-    });
+    };
     
-    map.current.on('mouseup', () => {
+    const handleMouseUp = () => {
       userInteracting = false;
-      spinGlobe();
-    });
+      if (rotationEnabled) spinGlobe();
+    };
     
-    map.current.on('touchend', () => {
+    const handleTouchEnd = () => {
       userInteracting = false;
-      spinGlobe();
-    });
+      if (rotationEnabled) spinGlobe();
+    };
 
-    map.current.on('moveend', () => {
-      spinGlobe();
-    });
+    const handleMoveEnd = () => {
+      if (rotationEnabled) spinGlobe();
+    };
 
-    // Initialize spinning based on state
+    // Add event listeners
+    map.current.on('mousedown', handleMouseDown);
+    map.current.on('dragstart', handleDragStart);
+    map.current.on('mouseup', handleMouseUp);
+    map.current.on('touchend', handleTouchEnd);
+    map.current.on('moveend', handleMoveEnd);
+
+    // Start spinning if enabled
     if (rotationEnabled) {
       spinGlobe();
     }
 
-    // Update spinEnabled when rotationEnabled changes
-    return () => {
-      map.current?.remove();
-    };
-  }, []);
-
-  // Effect to update the spinning state when toggle changes
-  useEffect(() => {
-    if (map.current) {
-      // Update the spinning state in the map context
-      const spinningState = map.current.getContainer().querySelector('#spinning-state');
-      if (spinningState) {
-        spinningState.setAttribute('data-spinning', rotationEnabled ? 'true' : 'false');
+    // Set up interval for continuous rotation when enabled
+    const rotationInterval = setInterval(() => {
+      if (rotationEnabled) {
+        spinGlobe();
       }
-    }
+    }, 1000);
+
+    // Cleanup event listeners and interval
+    return () => {
+      if (map.current) {
+        map.current.off('mousedown', handleMouseDown);
+        map.current.off('dragstart', handleDragStart);
+        map.current.off('mouseup', handleMouseUp);
+        map.current.off('touchend', handleTouchEnd);
+        map.current.off('moveend', handleMoveEnd);
+      }
+      clearInterval(rotationInterval);
+    };
   }, [rotationEnabled]);
 
   const handleToggleRotation = () => {
@@ -148,10 +167,7 @@ const MapTab: React.FC = () => {
         Interactive 3D globe visualization. Drag to rotate, scroll to zoom.
       </p>
       <div className="relative w-full h-[700px] flex items-center justify-center">
-        <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg">
-          {/* Hidden element to store spinning state */}
-          <div id="spinning-state" data-spinning={rotationEnabled ? 'true' : 'false'} hidden />
-        </div>
+        <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
       </div>
     </div>
   );
