@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Toggle } from '@/components/ui/toggle';
-import { RotateCw, RotateCcw, Flag } from 'lucide-react';
+import { RotateCw, RotateCcw, Flag, MapPin } from 'lucide-react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -65,6 +65,52 @@ const africanCountries = [
   { name: 'Zimbabwe', flag: 'zw', coordinates: [29.1549, -19.0154] }
 ];
 
+// Key locations in Sudan with coordinates and descriptions
+const sudanLocations = [
+  { 
+    name: 'Khartoum', 
+    type: 'Capital City', 
+    coordinates: [32.5599, 15.5007], 
+    description: 'Capital and largest city of Sudan'
+  },
+  { 
+    name: 'Port Sudan', 
+    type: 'Port', 
+    coordinates: [37.2164, 19.6175], 
+    description: 'Major port city on the Red Sea'
+  },
+  { 
+    name: 'Omdurman', 
+    type: 'Major City', 
+    coordinates: [32.4801, 15.6513], 
+    description: 'Most populous city in Sudan'
+  },
+  { 
+    name: 'Kassala', 
+    type: 'City', 
+    coordinates: [36.3994, 15.4548], 
+    description: 'Eastern city near Eritrean border'
+  },
+  { 
+    name: 'El Fasher', 
+    type: 'City', 
+    coordinates: [25.3494, 13.6279], 
+    description: 'Capital of North Darfur state'
+  },
+  { 
+    name: 'Nyala', 
+    type: 'City', 
+    coordinates: [24.8921, 12.0489], 
+    description: 'Capital of South Darfur state'
+  },
+  { 
+    name: 'Suakin', 
+    type: 'Historic Port', 
+    coordinates: [37.3321, 19.1059], 
+    description: 'Historic port city on the Red Sea'
+  }
+];
+
 const CountryButton = ({ country, isSelected, onClick }: { 
   country: { name: string; flag: string; coordinates: number[] }; 
   isSelected: boolean;
@@ -96,6 +142,8 @@ const MapTab: React.FC = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [rotationEnabled, setRotationEnabled] = useState(false); // Start with rotation disabled until animation completes
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [isAnimatingToCountry, setIsAnimatingToCountry] = useState(false);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -148,8 +196,16 @@ const MapTab: React.FC = () => {
     // Cleanup function
     return () => {
       map.current?.remove();
+      // Clear any existing markers
+      clearMarkers();
     };
   }, []);
+
+  // Function to clear existing markers
+  const clearMarkers = () => {
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+  };
 
   // Separate effect for handling rotation that depends on rotationEnabled state
   useEffect(() => {
@@ -166,7 +222,7 @@ const MapTab: React.FC = () => {
       if (!map.current) return;
       
       const zoom = map.current.getZoom();
-      if (rotationEnabled && !userInteracting && zoom < maxSpinZoom) {
+      if (rotationEnabled && !userInteracting && zoom < maxSpinZoom && !isAnimatingToCountry) {
         let distancePerSecond = 360 / secondsPerRevolution;
         if (zoom > slowSpinZoom) {
           const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
@@ -189,16 +245,16 @@ const MapTab: React.FC = () => {
     
     const handleMouseUp = () => {
       userInteracting = false;
-      if (rotationEnabled) spinGlobe();
+      if (rotationEnabled && !isAnimatingToCountry) spinGlobe();
     };
     
     const handleTouchEnd = () => {
       userInteracting = false;
-      if (rotationEnabled) spinGlobe();
+      if (rotationEnabled && !isAnimatingToCountry) spinGlobe();
     };
 
     const handleMoveEnd = () => {
-      if (rotationEnabled) spinGlobe();
+      if (rotationEnabled && !isAnimatingToCountry) spinGlobe();
     };
 
     // Add event listeners
@@ -209,13 +265,13 @@ const MapTab: React.FC = () => {
     map.current.on('moveend', handleMoveEnd);
 
     // Start spinning if enabled
-    if (rotationEnabled) {
+    if (rotationEnabled && !isAnimatingToCountry) {
       spinGlobe();
     }
 
     // Set up interval for continuous rotation when enabled
     const rotationInterval = setInterval(() => {
-      if (rotationEnabled) {
+      if (rotationEnabled && !isAnimatingToCountry) {
         spinGlobe();
       }
     }, 1000);
@@ -231,7 +287,56 @@ const MapTab: React.FC = () => {
       }
       clearInterval(rotationInterval);
     };
-  }, [rotationEnabled]);
+  }, [rotationEnabled, isAnimatingToCountry]);
+
+  // Create markers for Sudan locations when the country is selected
+  const createSudanMarkers = () => {
+    if (!map.current) return;
+    
+    // Clear any existing markers first
+    clearMarkers();
+    
+    // Create markers for each location
+    sudanLocations.forEach((location) => {
+      // Create a DOM element for the marker
+      const markerElement = document.createElement('div');
+      markerElement.className = 'marker';
+      markerElement.innerHTML = `<div class="flex flex-col items-center">
+        <div class="text-red-600">
+          ${MapPin}
+        </div>
+      </div>`;
+      
+      // Create a React element for the marker using lucide-react
+      const markerNode = document.createElement('div');
+      markerNode.className = 'marker-container';
+      markerNode.style.color = '#e63946'; // Use a strong red color for visibility
+      
+      // Render the MapPin icon into the marker node
+      const icon = document.createElement('div');
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+      markerNode.appendChild(icon);
+      
+      // Create the marker
+      const marker = new mapboxgl.Marker({
+        element: markerNode, 
+        anchor: 'bottom'
+      })
+        .setLngLat(location.coordinates)
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 }) // Add a popup
+            .setHTML(
+              `<h3 class="font-medium text-sm">${location.name}</h3>
+              <p class="text-xs text-gray-500">${location.type}</p>
+              <p class="text-xs mt-1">${location.description}</p>`
+            )
+        )
+        .addTo(map.current);
+      
+      // Store the marker reference for later cleanup
+      markersRef.current.push(marker);
+    });
+  };
 
   const handleToggleRotation = () => {
     setRotationEnabled(!rotationEnabled);
@@ -242,6 +347,9 @@ const MapTab: React.FC = () => {
     
     // Only allow Sudan to be selected
     if (country.name === 'Sudan' && map.current) {
+      // Set animating state to prevent rotation during animation
+      setIsAnimatingToCountry(true);
+      
       // Turn off rotation when focusing on a country
       setRotationEnabled(false);
       
@@ -255,6 +363,15 @@ const MapTab: React.FC = () => {
         pitch: 30, // Add some pitch for better perspective
         duration: 3000, // Animation duration
         essential: true
+      });
+      
+      // Add markers after animation completes
+      map.current.once('moveend', () => {
+        if (selectedCountry === 'Sudan') {
+          createSudanMarkers();
+        }
+        // Reset animation state
+        setIsAnimatingToCountry(false);
       });
     }
   };
