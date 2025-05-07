@@ -3,12 +3,99 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Toggle } from '@/components/ui/toggle';
-import { RotateCw, RotateCcw } from 'lucide-react';
+import { RotateCw, RotateCcw, Flag } from 'lucide-react';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+// List of African countries with their flags and coordinates
+const africanCountries = [
+  { name: 'Algeria', flag: 'dz', coordinates: [2.6327, 28.0339] },
+  { name: 'Angola', flag: 'ao', coordinates: [17.8739, -11.2027] },
+  { name: 'Benin', flag: 'bj', coordinates: [2.3158, 9.3077] },
+  { name: 'Botswana', flag: 'bw', coordinates: [24.6849, -22.3285] },
+  { name: 'Burkina Faso', flag: 'bf', coordinates: [-1.6880, 12.2383] },
+  { name: 'Burundi', flag: 'bi', coordinates: [29.9189, -3.3731] },
+  { name: 'Cabo Verde', flag: 'cv', coordinates: [-23.6051, 15.1201] },
+  { name: 'Cameroon', flag: 'cm', coordinates: [12.3547, 7.3697] },
+  { name: 'Central African Republic', flag: 'cf', coordinates: [20.9394, 6.6111] },
+  { name: 'Chad', flag: 'td', coordinates: [18.7322, 15.4542] },
+  { name: 'Comoros', flag: 'km', coordinates: [43.3333, -11.6455] },
+  { name: 'Congo', flag: 'cg', coordinates: [15.2662, -0.2280] },
+  { name: 'DR Congo', flag: 'cd', coordinates: [21.7587, -4.0383] },
+  { name: 'Djibouti', flag: 'dj', coordinates: [42.5903, 11.8251] },
+  { name: 'Egypt', flag: 'eg', coordinates: [30.8025, 26.8206] },
+  { name: 'Equatorial Guinea', flag: 'gq', coordinates: [10.2679, 1.6508] },
+  { name: 'Eritrea', flag: 'er', coordinates: [39.7823, 15.1794] },
+  { name: 'Eswatini', flag: 'sz', coordinates: [31.4659, -26.5225] },
+  { name: 'Ethiopia', flag: 'et', coordinates: [40.4897, 9.1450] },
+  { name: 'Gabon', flag: 'ga', coordinates: [11.6094, -0.8037] },
+  { name: 'Gambia', flag: 'gm', coordinates: [-15.3100, 13.4432] },
+  { name: 'Ghana', flag: 'gh', coordinates: [-1.0232, 7.9465] },
+  { name: 'Guinea', flag: 'gn', coordinates: [-9.6966, 9.9456] },
+  { name: 'Guinea-Bissau', flag: 'gw', coordinates: [-15.1804, 11.8037] },
+  { name: 'Ivory Coast', flag: 'ci', coordinates: [-5.5471, 7.5400] },
+  { name: 'Kenya', flag: 'ke', coordinates: [37.9062, -0.0236] },
+  { name: 'Lesotho', flag: 'ls', coordinates: [28.2336, -29.6100] },
+  { name: 'Liberia', flag: 'lr', coordinates: [-9.4295, 6.4281] },
+  { name: 'Libya', flag: 'ly', coordinates: [17.2283, 26.3351] },
+  { name: 'Madagascar', flag: 'mg', coordinates: [46.8691, -18.7669] },
+  { name: 'Malawi', flag: 'mw', coordinates: [34.3015, -13.2543] },
+  { name: 'Mali', flag: 'ml', coordinates: [-3.9961, 17.5707] },
+  { name: 'Mauritania', flag: 'mr', coordinates: [-10.9408, 21.0079] },
+  { name: 'Mauritius', flag: 'mu', coordinates: [57.5522, -20.3484] },
+  { name: 'Morocco', flag: 'ma', coordinates: [-7.0926, 31.7917] },
+  { name: 'Mozambique', flag: 'mz', coordinates: [35.5296, -18.6657] },
+  { name: 'Namibia', flag: 'na', coordinates: [18.4904, -22.9576] },
+  { name: 'Niger', flag: 'ne', coordinates: [8.0817, 17.6078] },
+  { name: 'Nigeria', flag: 'ng', coordinates: [8.6753, 9.0820] },
+  { name: 'Rwanda', flag: 'rw', coordinates: [29.8739, -1.9403] },
+  { name: 'Sao Tome and Principe', flag: 'st', coordinates: [6.6131, 0.1864] },
+  { name: 'Senegal', flag: 'sn', coordinates: [-14.4524, 14.4974] },
+  { name: 'Seychelles', flag: 'sc', coordinates: [55.4920, -4.6796] },
+  { name: 'Sierra Leone', flag: 'sl', coordinates: [-11.7799, 8.4606] },
+  { name: 'Somalia', flag: 'so', coordinates: [46.1996, 5.1521] },
+  { name: 'South Africa', flag: 'za', coordinates: [22.9375, -30.5595] },
+  { name: 'South Sudan', flag: 'ss', coordinates: [31.3070, 6.8770] },
+  { name: 'Sudan', flag: 'sd', coordinates: [30.2176, 12.8628] },
+  { name: 'Tanzania', flag: 'tz', coordinates: [34.8888, -6.3690] },
+  { name: 'Togo', flag: 'tg', coordinates: [0.8248, 8.6195] },
+  { name: 'Tunisia', flag: 'tn', coordinates: [9.5375, 33.8869] },
+  { name: 'Uganda', flag: 'ug', coordinates: [32.2903, 1.3733] },
+  { name: 'Zambia', flag: 'zm', coordinates: [27.8493, -13.1339] },
+  { name: 'Zimbabwe', flag: 'zw', coordinates: [29.1549, -19.0154] }
+];
+
+const CountryButton = ({ country, isSelected, onClick }: { 
+  country: { name: string; flag: string; coordinates: number[] }; 
+  isSelected: boolean;
+  onClick: () => void;
+}) => {
+  return (
+    <button 
+      className={`flex items-center justify-between w-full px-3 py-2 text-left hover:bg-slate-100 rounded transition-colors ${isSelected ? 'bg-slate-100' : ''}`}
+      onClick={onClick}
+    >
+      <div className="flex items-center space-x-3">
+        <img 
+          src={`https://flagcdn.com/24x18/${country.flag}.png`}
+          srcSet={`https://flagcdn.com/48x36/${country.flag}.png 2x, https://flagcdn.com/72x54/${country.flag}.png 3x`} 
+          width="24" 
+          height="18"
+          alt={`${country.name} flag`}
+          className="rounded-sm shadow-sm"
+        />
+        <span className="text-sm font-medium">{country.name}</span>
+      </div>
+      {country.name === 'Sudan' && <Flag className="h-4 w-4 text-blue-500" />}
+    </button>
+  );
+};
 
 const MapTab: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [rotationEnabled, setRotationEnabled] = useState(true);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -145,6 +232,25 @@ const MapTab: React.FC = () => {
     setRotationEnabled(!rotationEnabled);
   };
 
+  const handleCountryClick = (country: typeof africanCountries[0]) => {
+    setSelectedCountry(country.name);
+    
+    // Only allow Sudan to be selected
+    if (country.name === 'Sudan' && map.current) {
+      // Turn off rotation when focusing on a country
+      setRotationEnabled(false);
+      
+      // Fly to Sudan
+      map.current.flyTo({
+        center: country.coordinates,
+        zoom: 5, // Zoom level for country view
+        pitch: 30, // Add some pitch for better perspective
+        duration: 3000, // Animation duration
+        essential: true
+      });
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 min-h-[800px]">
       <div className="flex items-center justify-between mb-4">
@@ -166,9 +272,37 @@ const MapTab: React.FC = () => {
       <p className="text-sm text-gray-500 mb-6">
         Interactive 3D globe visualization. Drag to rotate, scroll to zoom.
       </p>
-      <div className="relative w-full h-[700px] flex items-center justify-center">
-        <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
-      </div>
+      
+      <ResizablePanelGroup direction="horizontal" className="min-h-[700px] rounded-lg border">
+        <ResizablePanel defaultSize={75}>
+          <div className="relative w-full h-full">
+            <div ref={mapContainer} className="absolute inset-0" />
+          </div>
+        </ResizablePanel>
+        
+        <ResizableHandle withHandle />
+        
+        <ResizablePanel defaultSize={25}>
+          <div className="h-full flex flex-col bg-white">
+            <div className="p-4 border-b">
+              <h3 className="font-medium">African Countries</h3>
+              <p className="text-xs text-gray-500 mt-1">Click on Sudan to focus the map</p>
+            </div>
+            <ScrollArea className="flex-1">
+              <div className="p-3 space-y-1">
+                {africanCountries.map((country) => (
+                  <CountryButton
+                    key={country.name}
+                    country={country}
+                    isSelected={selectedCountry === country.name}
+                    onClick={() => handleCountryClick(country)}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };
