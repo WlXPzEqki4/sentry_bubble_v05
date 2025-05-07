@@ -1,11 +1,14 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { Toggle } from '@/components/ui/toggle';
+import { RotateCw, RotateCcw } from 'lucide-react';
 
 const MapTab: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const [rotationEnabled, setRotationEnabled] = useState(true);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -55,7 +58,7 @@ const MapTab: React.FC = () => {
     const maxSpinZoom = 5;
     const slowSpinZoom = 3;
     let userInteracting = false;
-    let spinEnabled = true;
+    let spinEnabled = rotationEnabled;
 
     // Spin globe function
     function spinGlobe() {
@@ -97,23 +100,58 @@ const MapTab: React.FC = () => {
       spinGlobe();
     });
 
-    // Start the globe spinning
-    spinGlobe();
+    // Initialize spinning based on state
+    if (rotationEnabled) {
+      spinGlobe();
+    }
 
-    // Cleanup
+    // Update spinEnabled when rotationEnabled changes
     return () => {
       map.current?.remove();
     };
   }, []);
 
+  // Effect to update the spinning state when toggle changes
+  useEffect(() => {
+    if (map.current) {
+      // Update the spinning state in the map context
+      const spinningState = map.current.getContainer().querySelector('#spinning-state');
+      if (spinningState) {
+        spinningState.setAttribute('data-spinning', rotationEnabled ? 'true' : 'false');
+      }
+    }
+  }, [rotationEnabled]);
+
+  const handleToggleRotation = () => {
+    setRotationEnabled(!rotationEnabled);
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 min-h-[800px]">
-      <h2 className="text-xl font-semibold mb-4">Global Visualization</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Global Visualization</h2>
+        <Toggle 
+          pressed={rotationEnabled} 
+          onPressedChange={handleToggleRotation} 
+          aria-label="Toggle rotation"
+          className="ml-2"
+        >
+          {rotationEnabled ? (
+            <RotateCw className="h-4 w-4 mr-2" />
+          ) : (
+            <RotateCcw className="h-4 w-4 mr-2" />
+          )}
+          {rotationEnabled ? 'Rotation On' : 'Rotation Off'}
+        </Toggle>
+      </div>
       <p className="text-sm text-gray-500 mb-6">
         Interactive 3D globe visualization. Drag to rotate, scroll to zoom.
       </p>
       <div className="relative w-full h-[700px] flex items-center justify-center">
-        <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
+        <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg">
+          {/* Hidden element to store spinning state */}
+          <div id="spinning-state" data-spinning={rotationEnabled ? 'true' : 'false'} hidden />
+        </div>
       </div>
     </div>
   );
