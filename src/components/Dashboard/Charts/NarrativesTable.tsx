@@ -55,10 +55,9 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     try {
       console.log("Fetching date options...");
       
-      // Using normal fetch with params object to avoid typing issues
-      const { data: dateData, error: dateError } = await supabase.rest.rpc(
-        'get_dates_from_narratives_virality',
-        {}
+      // Use the rpc method correctly
+      const { data: dateData, error: dateError } = await supabase.rpc(
+        'get_dates_from_narratives_virality'
       );
       
       if (dateError) {
@@ -69,9 +68,8 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       console.log("Date data received:", dateData);
       
       if (Array.isArray(dateData)) {
-        // Type assertion to avoid TS errors
-        const typedDateData = dateData as DateItem[];
-        const uniqueDates = typedDateData
+        // Type assertion to handle dates correctly
+        const uniqueDates = (dateData as DateItem[])
           .map(item => item.date)
           .filter(Boolean) as string[];
         
@@ -88,10 +86,9 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
 
       console.log("Fetching window options...");
       
-      // Using normal fetch with params object to avoid typing issues
-      const { data: windowData, error: windowError } = await supabase.rest.rpc(
-        'get_windows_from_narratives_virality',
-        {}
+      // Use the rpc method correctly for windows
+      const { data: windowData, error: windowError } = await supabase.rpc(
+        'get_windows_from_narratives_virality'
       );
       
       if (windowError) {
@@ -102,9 +99,8 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       console.log("Window data received:", windowData);
       
       if (Array.isArray(windowData)) {
-        // Type assertion to avoid TS errors
-        const typedWindowData = windowData as WindowItem[];
-        const uniqueWindows = typedWindowData
+        // Type assertion to handle window data correctly
+        const uniqueWindows = (windowData as WindowItem[])
           .map(item => item.window)
           .filter(Boolean) as string[];
         
@@ -140,16 +136,13 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
         window: selectedWindow 
       });
       
-      // Create params object with selected filters
-      const params = {
-        date: selectedDate,
-        window: selectedWindow
-      };
-      
-      // Using normal fetch with params object to avoid typing issues
-      const { data, error } = await supabase.rest.rpc(
+      // Using the rpc method correctly with params
+      const { data, error } = await supabase.rpc(
         'get_narratives_by_virality',
-        params
+        { 
+          p_date: selectedDate,
+          p_window: selectedWindow
+        }
       );
       
       if (error) {
@@ -161,8 +154,7 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       
       // Transform the data to match our interface with proper typing
       if (Array.isArray(data)) {
-        const typedData = data as NarrativeItem[];
-        const formattedData: NarrativeData[] = typedData.map((item, index) => ({
+        const formattedData: NarrativeData[] = (data as NarrativeItem[]).map((item, index) => ({
           id: index + 1,
           narrative: item.narrative || '',
           percentage: item.percentage || 0,
