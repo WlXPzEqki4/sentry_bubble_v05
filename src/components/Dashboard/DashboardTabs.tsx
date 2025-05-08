@@ -1,13 +1,14 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, FileText, ClipboardList, Bot, BarChart, Globe } from 'lucide-react';
+import { LayoutDashboard, FileText, ClipboardList, Bot, BarChart, Globe, Database } from 'lucide-react';
 import MapTab from '@/components/Dashboard/MapTab';
 import WidgetsTab from '@/components/Dashboard/WidgetsTab';
 import NewsTab from '@/components/Dashboard/NewsTab';
 import AITab from '@/components/Dashboard/AITab';
 import ReportsTab from '@/components/Dashboard/ReportsTab';
 import AnalyticsTab from '@/components/Dashboard/AnalyticsTab';
+import Analytics2Tab from '@/components/Dashboard/Analytics2Tab';
 
 interface DashboardTabsProps {
   permissions: any[];
@@ -83,6 +84,10 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           <BarChart className="h-4 w-4" />
           MDM Analytics
         </TabsTrigger>
+        <TabsTrigger value="analytics2" className="gap-2">
+          <Database className="h-4 w-4" />
+          MDM Analytics 2
+        </TabsTrigger>
       </TabsList>
       
       <TabsContent value="map" className="mt-6">
@@ -129,6 +134,10 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
       
       <TabsContent value="analytics" className="mt-6">
         <AnalyticsTab />
+      </TabsContent>
+      
+      <TabsContent value="analytics2" className="mt-6">
+        <Analytics2Tab />
       </TabsContent>
     </Tabs>
   );
