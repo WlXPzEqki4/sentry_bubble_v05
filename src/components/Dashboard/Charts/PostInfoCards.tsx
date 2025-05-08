@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
-import { Info, Facebook, Instagram, Twitter, TikTok } from "lucide-react";
+import { Info, Facebook, Instagram, Twitter } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +70,8 @@ const PostInfoCards: React.FC<PostInfoCardsProps> = ({ date, window, className =
       case 'telegram':
         return <span className="flex items-center justify-center h-6 w-6 text-blue-400 font-bold">T</span>;
       case 'tik tok':
-        return <TikTok className="h-6 w-6" />;
+        // Using a text element instead of the TikTok icon that's not available
+        return <span className="flex items-center justify-center h-6 w-6 text-black font-bold">TT</span>;
       case 'truth social':
         return <span className="flex items-center justify-center h-6 w-6 text-blue-600 font-bold">T</span>;
       case 'gab':
