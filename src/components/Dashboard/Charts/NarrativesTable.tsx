@@ -23,22 +23,6 @@ interface NarrativeData {
   window: string;
 }
 
-// Define the expected response types from our Supabase functions
-interface DateItem {
-  date: string;
-}
-
-interface WindowItem {
-  window: string;
-}
-
-interface NarrativeItem {
-  narrative: string;
-  percentage: number;
-  date: string;
-  window: string;
-}
-
 const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => {
   const [narrativesData, setNarrativesData] = useState<NarrativeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,12 +39,11 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     try {
       console.log("Fetching date options...");
       
-      // Use the generic fetch method instead of typed rpc
+      // Use generic query builder instead of typed access
       const { data: dateData, error: dateError } = await supabase
         .from('top_narratives_by_virality')
         .select('date')
-        .order('date', { ascending: false })
-        .distinct();
+        .order('date', { ascending: false });
       
       if (dateError) {
         console.error("Date fetch error:", dateError);
@@ -69,11 +52,14 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       
       console.log("Date data received:", dateData);
       
+      // Get unique dates
       if (Array.isArray(dateData)) {
-        const uniqueDates = dateData
-          .map(item => item.date)
-          .filter(Boolean) as string[];
+        const datesSet = new Set<string>();
+        dateData.forEach(item => {
+          if (item.date) datesSet.add(item.date);
+        });
         
+        const uniqueDates = Array.from(datesSet);
         console.log("Processed unique dates:", uniqueDates);
         setAvailableDates(uniqueDates);
         
@@ -87,12 +73,11 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
 
       console.log("Fetching window options...");
       
-      // Use the generic fetch method instead of typed rpc for windows
+      // Use generic query builder for windows
       const { data: windowData, error: windowError } = await supabase
         .from('top_narratives_by_virality')
         .select('window')
-        .order('window')
-        .distinct();
+        .order('window');
       
       if (windowError) {
         console.error("Window fetch error:", windowError);
@@ -101,11 +86,14 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       
       console.log("Window data received:", windowData);
       
+      // Get unique windows
       if (Array.isArray(windowData)) {
-        const uniqueWindows = windowData
-          .map(item => item.window)
-          .filter(Boolean) as string[];
+        const windowsSet = new Set<string>();
+        windowData.forEach(item => {
+          if (item.window) windowsSet.add(item.window);
+        });
         
+        const uniqueWindows = Array.from(windowsSet);
         console.log("Processed unique windows:", uniqueWindows);
         setAvailableWindows(uniqueWindows);
         
@@ -138,7 +126,7 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
         window: selectedWindow 
       });
       
-      // Use the generic fetch method with filters
+      // Use generic query builder with filters
       const { data, error } = await supabase
         .from('top_narratives_by_virality')
         .select('narrative, percentage, date, window')
@@ -153,9 +141,16 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       
       console.log("Narratives data received:", data);
       
-      // Transform the data to match our interface with proper typing
       if (Array.isArray(data)) {
-        const formattedData: NarrativeData[] = data.map((item, index) => ({
+        // Type assertion to help TypeScript understand the structure
+        type NarrativeItem = {
+          narrative?: string;
+          percentage?: number;
+          date?: string;
+          window?: string;
+        };
+        
+        const formattedData: NarrativeData[] = (data as NarrativeItem[]).map((item, index) => ({
           id: index + 1,
           narrative: item.narrative || '',
           percentage: item.percentage || 0,
@@ -189,7 +184,7 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
 
   // Fetch data when filters change
   useEffect(() => {
-    if (selectedDate || selectedWindow) {
+    if (selectedDate && selectedWindow) {
       fetchNarrativesData();
     }
   }, [selectedDate, selectedWindow]);
