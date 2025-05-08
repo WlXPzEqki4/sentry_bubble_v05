@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Select, 
@@ -19,7 +18,7 @@ interface NarrativesTableProps {
 interface NarrativeData {
   id: number;
   narrative: string;
-  percentage: number;
+  percentage: string;
   date: string;
   window: string;
 }
@@ -147,13 +146,11 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       
       if (Array.isArray(data)) {
         // Convert data to our UI format with lowercase properties
+        // Keep the percentage as a string without conversion
         const formattedData: NarrativeData[] = data.map((item, index) => ({
           id: index + 1,
           narrative: String(item.Narrative || ''),
-          // Convert percentage from string to number if needed
-          percentage: typeof item.Percentage === 'string' ? 
-            parseFloat(item.Percentage.replace('%', '')) : 
-            Number(item.Percentage) || 0,
+          percentage: String(item.Percentage || ''),  // Keep as string
           date: item.Date || '',
           window: String(item.Window || '')
         }));
@@ -189,19 +186,25 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     }
   }, [selectedDate, selectedWindow]);
 
-  // Table columns configuration
+  // Table columns configuration - updated to have separate columns
   const columns = [
     {
       key: 'narrative',
       header: 'Narrative',
       render: (value: string, item: NarrativeData) => {
-        // Format as "1. Narrative Text (XX%)"
         return (
           <div className="flex items-start">
             <span className="mr-1">{item.id}.</span>
-            <span>{value} <span className="font-medium">({item.percentage}%)</span></span>
+            <span>{value}</span>
           </div>
         );
+      }
+    },
+    {
+      key: 'percentage',
+      header: 'Percentage',
+      render: (value: string) => {
+        return <span>{value}</span>;
       }
     }
   ];
