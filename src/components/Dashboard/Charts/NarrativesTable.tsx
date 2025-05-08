@@ -6,6 +6,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import DataTable from '@/components/Dashboard/Charts/DataTable';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
@@ -217,14 +218,15 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
           <p className="text-sm text-gray-500">Most viral narratives based on social media engagement</p>
         </div>
         <div className="flex gap-3">
-          {/* Date selector */}
+          {/* Date selector with label */}
           <div className="w-40">
+            <Label htmlFor="date-select" className="mb-1 block text-sm">Date</Label>
             <Select 
               value={selectedDate} 
               onValueChange={setSelectedDate}
               disabled={isLoading || availableDates.length === 0}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger id="date-select" className="h-9">
                 <SelectValue placeholder="Select date" />
               </SelectTrigger>
               <SelectContent>
@@ -235,14 +237,15 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
             </Select>
           </div>
           
-          {/* Window selector */}
+          {/* Window selector with label */}
           <div className="w-40">
+            <Label htmlFor="timeframe-select" className="mb-1 block text-sm">Timeframe Hours</Label>
             <Select 
               value={selectedWindow} 
               onValueChange={setSelectedWindow}
               disabled={isLoading || availableWindows.length === 0}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger id="timeframe-select" className="h-9">
                 <SelectValue placeholder="Select window" />
               </SelectTrigger>
               <SelectContent>
