@@ -15,6 +15,7 @@ interface NarrativesTableProps {
   className?: string;
 }
 
+// Interface for our UI component's state
 interface NarrativeData {
   id: number;
   narrative: string;
@@ -23,12 +24,14 @@ interface NarrativeData {
   window: string;
 }
 
-// Using a type definition for the table that doesn't exist in our Database types
+// Type definition matching Supabase table with correct capitalization
 type TopNarrativesByVirality = {
-  narrative: string;
-  percentage: number;
-  date: string;
-  window: string;
+  UUID: string | number;
+  Set: number;
+  Date: string;
+  Window: string;
+  Narrative: string;
+  Percentage: string;
 }
 
 const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => {
@@ -50,8 +53,8 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       // Using type assertion to bypass TypeScript errors
       const { data: dateData, error: dateError } = await supabase
         .from('top_narratives_by_virality' as any)
-        .select('date')
-        .order('date', { ascending: false });
+        .select('Date')
+        .order('Date', { ascending: false });
       
       if (dateError) {
         console.error("Date fetch error:", dateError);
@@ -64,7 +67,7 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       if (Array.isArray(dateData)) {
         const datesSet = new Set<string>();
         dateData.forEach(item => {
-          if (item.date) datesSet.add(item.date);
+          if (item.Date) datesSet.add(item.Date);
         });
         
         const uniqueDates = Array.from(datesSet);
@@ -84,8 +87,8 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       // Using type assertion for window data
       const { data: windowData, error: windowError } = await supabase
         .from('top_narratives_by_virality' as any)
-        .select('window')
-        .order('window');
+        .select('Window')
+        .order('Window');
       
       if (windowError) {
         console.error("Window fetch error:", windowError);
@@ -98,7 +101,7 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       if (Array.isArray(windowData)) {
         const windowsSet = new Set<string>();
         windowData.forEach(item => {
-          if (item.window) windowsSet.add(item.window);
+          if (item.Window) windowsSet.add(item.Window);
         });
         
         const uniqueWindows = Array.from(windowsSet);
@@ -137,10 +140,10 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       // Using type assertion for the main query
       const { data, error } = await supabase
         .from('top_narratives_by_virality' as any)
-        .select('narrative, percentage, date, window')
-        .eq('date', selectedDate)
-        .eq('window', selectedWindow)
-        .order('percentage', { ascending: false });
+        .select('Narrative, Percentage, Date, Window')
+        .eq('Date', selectedDate)
+        .eq('Window', selectedWindow)
+        .order('Percentage', { ascending: false });
       
       if (error) {
         console.error("Narratives fetch error:", error);
@@ -150,15 +153,16 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       console.log("Narratives data received:", data);
       
       if (Array.isArray(data)) {
-        // Type the data as our custom type
-        const typedData = data as TopNarrativesByVirality[];
-        
-        const formattedData: NarrativeData[] = typedData.map((item, index) => ({
+        // Type the data and convert to our UI format with lowercase properties
+        const formattedData: NarrativeData[] = (data as unknown as TopNarrativesByVirality[]).map((item, index) => ({
           id: index + 1,
-          narrative: item.narrative || '',
-          percentage: item.percentage || 0,
-          date: item.date || '',
-          window: item.window || ''
+          narrative: String(item.Narrative || ''),
+          // Convert percentage from string to number if needed
+          percentage: typeof item.Percentage === 'string' ? 
+            parseFloat(item.Percentage.replace('%', '')) : 
+            Number(item.Percentage) || 0,
+          date: item.Date || '',
+          window: String(item.Window || '')
         }));
         
         console.log("Formatted narratives data:", formattedData);
