@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Select, 
@@ -8,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import DataTable from '@/components/Dashboard/Charts/DataTable';
+import PostInfoCards from '@/components/Dashboard/Charts/PostInfoCards';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 
@@ -211,63 +213,74 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
   ];
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div>
-          <h3 className="text-lg font-medium mb-1">Top Narratives by Virality</h3>
-          <p className="text-sm text-gray-500">Most viral narratives based on social media engagement</p>
-        </div>
-        <div className="flex gap-3">
-          {/* Date selector with label */}
-          <div className="w-40">
-            <Label htmlFor="date-select" className="mb-1 block text-sm">Date</Label>
-            <Select 
-              value={selectedDate} 
-              onValueChange={setSelectedDate}
-              disabled={isLoading || availableDates.length === 0}
-            >
-              <SelectTrigger id="date-select" className="h-9">
-                <SelectValue placeholder="Select date" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableDates.map(date => (
-                  <SelectItem key={date} value={date}>{date}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="space-y-8">
+      <div className={`space-y-4 ${className}`}>
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div>
+            <h3 className="text-lg font-medium mb-1">Top Narratives by Virality</h3>
+            <p className="text-sm text-gray-500">Most viral narratives based on social media engagement</p>
           </div>
-          
-          {/* Window selector with label */}
-          <div className="w-40">
-            <Label htmlFor="timeframe-select" className="mb-1 block text-sm">Timeframe Hours</Label>
-            <Select 
-              value={selectedWindow} 
-              onValueChange={setSelectedWindow}
-              disabled={isLoading || availableWindows.length === 0}
-            >
-              <SelectTrigger id="timeframe-select" className="h-9">
-                <SelectValue placeholder="Select window" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableWindows.map(window => (
-                  <SelectItem key={window} value={window}>{window}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex gap-3">
+            {/* Date selector with label */}
+            <div className="w-40">
+              <Label htmlFor="date-select" className="mb-1 block text-sm">Date</Label>
+              <Select 
+                value={selectedDate} 
+                onValueChange={setSelectedDate}
+                disabled={isLoading || availableDates.length === 0}
+              >
+                <SelectTrigger id="date-select" className="h-9">
+                  <SelectValue placeholder="Select date" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDates.map(date => (
+                    <SelectItem key={date} value={date}>{date}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Window selector with label */}
+            <div className="w-40">
+              <Label htmlFor="timeframe-select" className="mb-1 block text-sm">Timeframe Hours</Label>
+              <Select 
+                value={selectedWindow} 
+                onValueChange={setSelectedWindow}
+                disabled={isLoading || availableWindows.length === 0}
+              >
+                <SelectTrigger id="timeframe-select" className="h-9">
+                  <SelectValue placeholder="Select window" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableWindows.map(window => (
+                    <SelectItem key={window} value={window}>{window}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
+        
+        {/* Render the DataTable with narratives data */}
+        {error ? (
+          <div className="text-red-500 p-4 bg-red-50 rounded-md">{error}</div>
+        ) : (
+          <DataTable 
+            data={narrativesData}
+            columns={columns}
+            title=""
+            className="w-full"
+            pageSize={15}
+          />
+        )}
       </div>
       
-      {/* Render the DataTable with narratives data */}
-      {error ? (
-        <div className="text-red-500 p-4 bg-red-50 rounded-md">{error}</div>
-      ) : (
-        <DataTable 
-          data={narrativesData}
-          columns={columns}
-          title=""
-          className="w-full"
-          pageSize={15}
+      {/* Add PostInfoCards component */}
+      {selectedDate && selectedWindow && (
+        <PostInfoCards 
+          date={selectedDate} 
+          window={selectedWindow}
+          className="mt-8" 
         />
       )}
     </div>
