@@ -36,26 +36,25 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
   // Fetch unique dates and windows for dropdown filters
   const fetchFilterOptions = async () => {
     try {
+      // Using raw SQL query for dates since the table isn't in the TypeScript types
       const { data: dateData, error: dateError } = await supabase
-        .from('Top_Narratives_by_Virality')
-        .select('date')
-        .order('date', { ascending: false });
+        .rpc('get_dates_from_narratives_virality');
       
       if (dateError) throw new Error(dateError.message);
       
-      const uniqueDates = Array.from(new Set(dateData.map(item => item.date))).filter(Boolean);
+      const uniqueDates = dateData ? Array.from(new Set(dateData.map((item: any) => item.date))).filter(Boolean) : [];
       setAvailableDates(uniqueDates);
       if (uniqueDates.length > 0) {
         setSelectedDate(uniqueDates[0]);
       }
 
+      // Using raw SQL query for windows
       const { data: windowData, error: windowError } = await supabase
-        .from('Top_Narratives_by_Virality')
-        .select('window');
+        .rpc('get_windows_from_narratives_virality');
       
       if (windowError) throw new Error(windowError.message);
       
-      const uniqueWindows = Array.from(new Set(windowData.map(item => item.window))).filter(Boolean);
+      const uniqueWindows = windowData ? Array.from(new Set(windowData.map((item: any) => item.window))).filter(Boolean) : [];
       setAvailableWindows(uniqueWindows);
       if (uniqueWindows.length > 0) {
         setSelectedWindow(uniqueWindows[0]);
@@ -72,25 +71,25 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     setError(null);
     
     try {
-      let query = supabase
-        .from('Top_Narratives_by_Virality')
-        .select('*');
-      
-      if (selectedDate) {
-        query = query.eq('date', selectedDate);
-      }
-      
-      if (selectedWindow) {
-        query = query.eq('window', selectedWindow);
-      }
-      
-      query = query.order('percentage', { ascending: false });
-      
-      const { data, error } = await query;
+      // Using raw SQL query with parameters
+      const { data, error } = await supabase
+        .rpc('get_narratives_by_virality', { 
+          p_date: selectedDate,
+          p_window: selectedWindow
+        });
       
       if (error) throw new Error(error.message);
       
-      setNarrativesData(data || []);
+      // Transform the data to match our interface
+      const formattedData: NarrativeData[] = (data || []).map((item: any, index: number) => ({
+        id: index + 1, // Add an ID for each row
+        narrative: item.narrative || '',
+        percentage: item.percentage || 0,
+        date: item.date || '',
+        window: item.window || ''
+      }));
+      
+      setNarrativesData(formattedData);
     } catch (err: any) {
       console.error('Error fetching narratives data:', err);
       setError('Failed to load narratives data');
