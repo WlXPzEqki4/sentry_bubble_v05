@@ -1,4 +1,3 @@
-
 import React from 'react';
 import WeatherWidget from '@/components/Dashboard/WeatherWidget';
 import CryptoWidget from '@/components/Dashboard/CryptoWidget';
@@ -21,11 +20,12 @@ const WidgetsTab: React.FC<WidgetsTabProps> = ({ permissions, hasPermission, has
       {weatherPermissions.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {hasPermission('weather', 'khartoum') && (
+            {/* We'll keep the database keys as 'abu_dhabi' and 'dubai' but display as Khartoum and Omdurman */}
+            {hasPermission('weather', 'abu_dhabi') && (
               <WeatherWidget city="Khartoum" />
             )}
             
-            {hasPermission('weather', 'omdurman') && (
+            {hasPermission('weather', 'dubai') && (
               <WeatherWidget city="Omdurman" />
             )}
           </div>

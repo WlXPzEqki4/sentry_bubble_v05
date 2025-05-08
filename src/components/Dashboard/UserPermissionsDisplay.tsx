@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -48,8 +47,9 @@ const UserPermissionsDisplay = ({ username }: { username: string }) => {
       
       let instanceName = permission.widget_instance;
       if (permission.widget_type === 'weather') {
-        if (instanceName === 'khartoum') instanceName = 'Khartoum';
-        if (instanceName === 'omdurman') instanceName = 'Omdurman';
+        // Map database keys to display names for weather widgets
+        if (instanceName === 'abu_dhabi') instanceName = 'Khartoum';
+        if (instanceName === 'dubai') instanceName = 'Omdurman';
       } else if (permission.widget_type === 'news') {
         if (instanceName === 'feed1') instanceName = 'Breaking News';
         if (instanceName === 'feed2') instanceName = 'UAE News';
