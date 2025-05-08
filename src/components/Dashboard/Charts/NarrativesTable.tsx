@@ -81,6 +81,9 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
         
         if (uniqueDates.length > 0) {
           setSelectedDate(uniqueDates[0]);
+        } else {
+          setSelectedDate("");
+          setIsLoading(false); // No dates available, so stop loading
         }
       } else {
         console.error("Expected array for date data but received:", typeof dateData);
@@ -93,7 +96,7 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       if (Array.isArray(dateData)) {
         const windowsSet = new Set<string>();
         dateData.forEach(item => {
-          if (item.Window) windowsSet.add(item.Window);
+          if (item.Window) windowsSet.add(String(item.Window));
         });
         
         const uniqueWindows = Array.from(windowsSet);
@@ -102,6 +105,9 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
         
         if (uniqueWindows.length > 0) {
           setSelectedWindow(uniqueWindows[0]);
+        } else {
+          setSelectedWindow("");
+          setIsLoading(false); // No windows available, so stop loading
         }
       } else {
         console.error("Expected array for window data but received:", typeof dateData);
@@ -110,6 +116,7 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     } catch (err: any) {
       console.error('Error fetching filter options:', err);
       setError('Failed to load filter options');
+      setIsLoading(false);
       toast({
         title: "Error loading filters",
         description: err.message || 'An unexpected error occurred',
@@ -120,6 +127,13 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
 
   // Fetch narratives data based on selected filters
   const fetchNarrativesData = async () => {
+    if (!selectedDate || !selectedWindow) {
+      console.log("Missing date or window selection, skipping fetch");
+      setNarrativesData([]);
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -186,6 +200,9 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
   useEffect(() => {
     if (selectedDate && selectedWindow) {
       fetchNarrativesData();
+    } else {
+      setNarrativesData([]);
+      setIsLoading(false);
     }
   }, [selectedDate, selectedWindow]);
 

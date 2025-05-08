@@ -70,6 +70,10 @@ const PostInfoCards: React.FC<PostInfoCardsProps> = ({ date, window, className =
 
   // Transform raw data into the format we need for display
   const transformData = (data: PostInfoData[]): PlatformData[] => {
+    if (!data || data.length === 0) {
+      return [];
+    }
+    
     // Group data by Source (platform)
     const platformGroups = data.reduce<Record<string, PostInfoData[]>>((acc, item) => {
       const source = item.Source;
@@ -145,6 +149,8 @@ const PostInfoCards: React.FC<PostInfoCardsProps> = ({ date, window, className =
   const fetchPostInfo = async () => {
     if (!date || !window) {
       console.log("Missing date or window parameter, skipping fetch");
+      setIsLoading(false);
+      setPlatforms([]);
       return;
     }
 
@@ -197,6 +203,9 @@ const PostInfoCards: React.FC<PostInfoCardsProps> = ({ date, window, className =
   useEffect(() => {
     if (date && window) {
       fetchPostInfo();
+    } else {
+      setIsLoading(false);
+      setPlatforms([]);
     }
   }, [date, window]);
 
