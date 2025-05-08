@@ -36,26 +36,36 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
   // Fetch unique dates and windows for dropdown filters
   const fetchFilterOptions = async () => {
     try {
-      // Using raw SQL query for dates since the table isn't in the TypeScript types
+      // Using raw SQL query for dates with proper type casting
       const { data: dateData, error: dateError } = await (supabase
         .rpc as any)('get_dates_from_narratives_virality');
       
       if (dateError) throw new Error(dateError.message);
       
-      const uniqueDates = dateData ? Array.from(new Set(dateData.map((item: any) => item.date))).filter(Boolean) : [];
+      // Explicitly type and filter the data
+      const uniqueDates = dateData 
+        ? Array.from(new Set(dateData.map((item: {date: string}) => item.date))).filter(Boolean) as string[]
+        : [];
+      
       setAvailableDates(uniqueDates);
+      
       if (uniqueDates.length > 0) {
         setSelectedDate(uniqueDates[0]);
       }
 
-      // Using raw SQL query for windows
+      // Using raw SQL query for windows with proper type casting
       const { data: windowData, error: windowError } = await (supabase
         .rpc as any)('get_windows_from_narratives_virality');
       
       if (windowError) throw new Error(windowError.message);
       
-      const uniqueWindows = windowData ? Array.from(new Set(windowData.map((item: any) => item.window))).filter(Boolean) : [];
+      // Explicitly type and filter the data
+      const uniqueWindows = windowData 
+        ? Array.from(new Set(windowData.map((item: {window: string}) => item.window))).filter(Boolean) as string[]
+        : [];
+      
       setAvailableWindows(uniqueWindows);
+      
       if (uniqueWindows.length > 0) {
         setSelectedWindow(uniqueWindows[0]);
       }
@@ -80,14 +90,16 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       
       if (error) throw new Error(error.message);
       
-      // Transform the data to match our interface
-      const formattedData: NarrativeData[] = (data || []).map((item: any, index: number) => ({
-        id: index + 1, // Add an ID for each row
-        narrative: item.narrative || '',
-        percentage: item.percentage || 0,
-        date: item.date || '',
-        window: item.window || ''
-      }));
+      // Transform the data to match our interface with proper typing
+      const formattedData: NarrativeData[] = data 
+        ? data.map((item: any, index: number) => ({
+            id: index + 1, // Add an ID for each row
+            narrative: item.narrative || '',
+            percentage: item.percentage || 0,
+            date: item.date || '',
+            window: item.window || ''
+          }))
+        : [];
       
       setNarrativesData(formattedData);
     } catch (err: any) {
