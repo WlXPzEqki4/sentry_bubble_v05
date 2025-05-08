@@ -33,7 +33,6 @@ AS $$
 $$;
 
 -- Function to get unique dates from the Top_Narratives_by_Virality table
--- Both with and without parameters for compatibility
 CREATE OR REPLACE FUNCTION public.get_dates_from_narratives_virality()
 RETURNS TABLE(date text) 
 LANGUAGE sql
@@ -56,7 +55,6 @@ AS $$
 $$;
 
 -- Function to get unique windows from the Top_Narratives_by_Virality table
--- Both with and without parameters for compatibility
 CREATE OR REPLACE FUNCTION public.get_windows_from_narratives_virality()
 RETURNS TABLE(window text) 
 LANGUAGE sql
@@ -88,5 +86,18 @@ AS $$
   WHERE 
     (date = p_date OR p_date IS NULL) AND
     (window = p_window OR p_window IS NULL)
+  ORDER BY percentage DESC;
+$$;
+
+-- Version of get_narratives_by_virality that accepts a JSON parameter for REST API compatibility
+CREATE OR REPLACE FUNCTION public.get_narratives_by_virality(params jsonb)
+RETURNS TABLE(narrative text, percentage numeric, date text, window text) 
+LANGUAGE sql
+AS $$
+  SELECT narrative, percentage, date, window
+  FROM top_narratives_by_virality
+  WHERE 
+    (date = params->>'date' OR params->>'date' IS NULL) AND
+    (window = params->>'window' OR params->>'window' IS NULL)
   ORDER BY percentage DESC;
 $$;

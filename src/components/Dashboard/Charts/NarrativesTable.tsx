@@ -23,11 +23,19 @@ interface NarrativeData {
   window: string;
 }
 
+// Define the expected response types from our Supabase functions
 interface DateItem {
   date: string;
 }
 
 interface WindowItem {
+  window: string;
+}
+
+interface NarrativeItem {
+  narrative: string;
+  percentage: number;
+  date: string;
   window: string;
 }
 
@@ -46,9 +54,12 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
   const fetchFilterOptions = async () => {
     try {
       console.log("Fetching date options...");
-      // Using RPC function with empty object params to avoid 'without parameters' error
-      const { data: dateData, error: dateError } = await supabase
-        .rpc('get_dates_from_narratives_virality', {});
+      
+      // Using normal fetch with params object to avoid typing issues
+      const { data: dateData, error: dateError } = await supabase.rest.rpc(
+        'get_dates_from_narratives_virality',
+        {}
+      );
       
       if (dateError) {
         console.error("Date fetch error:", dateError);
@@ -57,23 +68,31 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       
       console.log("Date data received:", dateData);
       
-      // Explicitly type and filter the data
-      const typedDateData = dateData as DateItem[];
-      const uniqueDates = typedDateData 
-        ? Array.from(new Set(typedDateData.map(item => item.date))).filter(Boolean) as string[]
-        : [];
-      
-      console.log("Processed unique dates:", uniqueDates);
-      setAvailableDates(uniqueDates);
-      
-      if (uniqueDates.length > 0) {
-        setSelectedDate(uniqueDates[0]);
+      if (Array.isArray(dateData)) {
+        // Type assertion to avoid TS errors
+        const typedDateData = dateData as DateItem[];
+        const uniqueDates = typedDateData
+          .map(item => item.date)
+          .filter(Boolean) as string[];
+        
+        console.log("Processed unique dates:", uniqueDates);
+        setAvailableDates(uniqueDates);
+        
+        if (uniqueDates.length > 0) {
+          setSelectedDate(uniqueDates[0]);
+        }
+      } else {
+        console.error("Expected array for date data but received:", typeof dateData);
+        throw new Error("Invalid date data format received");
       }
 
       console.log("Fetching window options...");
-      // Using RPC function with empty object params to avoid 'without parameters' error
-      const { data: windowData, error: windowError } = await supabase
-        .rpc('get_windows_from_narratives_virality', {});
+      
+      // Using normal fetch with params object to avoid typing issues
+      const { data: windowData, error: windowError } = await supabase.rest.rpc(
+        'get_windows_from_narratives_virality',
+        {}
+      );
       
       if (windowError) {
         console.error("Window fetch error:", windowError);
@@ -82,17 +101,22 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       
       console.log("Window data received:", windowData);
       
-      // Explicitly type and filter the data
-      const typedWindowData = windowData as WindowItem[];
-      const uniqueWindows = typedWindowData 
-        ? Array.from(new Set(typedWindowData.map(item => item.window))).filter(Boolean) as string[]
-        : [];
-      
-      console.log("Processed unique windows:", uniqueWindows);
-      setAvailableWindows(uniqueWindows);
-      
-      if (uniqueWindows.length > 0) {
-        setSelectedWindow(uniqueWindows[0]);
+      if (Array.isArray(windowData)) {
+        // Type assertion to avoid TS errors
+        const typedWindowData = windowData as WindowItem[];
+        const uniqueWindows = typedWindowData
+          .map(item => item.window)
+          .filter(Boolean) as string[];
+        
+        console.log("Processed unique windows:", uniqueWindows);
+        setAvailableWindows(uniqueWindows);
+        
+        if (uniqueWindows.length > 0) {
+          setSelectedWindow(uniqueWindows[0]);
+        }
+      } else {
+        console.error("Expected array for window data but received:", typeof windowData);
+        throw new Error("Invalid window data format received");
       }
     } catch (err: any) {
       console.error('Error fetching filter options:', err);
@@ -111,14 +135,22 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     setError(null);
     
     try {
-      console.log("Fetching narratives data with params:", { p_date: selectedDate, p_window: selectedWindow });
+      console.log("Fetching narratives data with params:", { 
+        date: selectedDate, 
+        window: selectedWindow 
+      });
       
-      // Using RPC function with parameters
-      const { data, error } = await supabase
-        .rpc('get_narratives_by_virality', { 
-          p_date: selectedDate,
-          p_window: selectedWindow
-        });
+      // Create params object with selected filters
+      const params = {
+        date: selectedDate,
+        window: selectedWindow
+      };
+      
+      // Using normal fetch with params object to avoid typing issues
+      const { data, error } = await supabase.rest.rpc(
+        'get_narratives_by_virality',
+        params
+      );
       
       if (error) {
         console.error("Narratives fetch error:", error);
@@ -128,18 +160,22 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       console.log("Narratives data received:", data);
       
       // Transform the data to match our interface with proper typing
-      const formattedData: NarrativeData[] = data 
-        ? data.map((item: { narrative: string; percentage: number; date: string; window: string }, index: number) => ({
-            id: index + 1, // Add an ID for each row
-            narrative: item.narrative || '',
-            percentage: item.percentage || 0,
-            date: item.date || '',
-            window: item.window || ''
-          }))
-        : [];
-      
-      console.log("Formatted narratives data:", formattedData);
-      setNarrativesData(formattedData);
+      if (Array.isArray(data)) {
+        const typedData = data as NarrativeItem[];
+        const formattedData: NarrativeData[] = typedData.map((item, index) => ({
+          id: index + 1,
+          narrative: item.narrative || '',
+          percentage: item.percentage || 0,
+          date: item.date || '',
+          window: item.window || ''
+        }));
+        
+        console.log("Formatted narratives data:", formattedData);
+        setNarrativesData(formattedData);
+      } else {
+        console.error("Expected array for narrative data but received:", typeof data);
+        setNarrativesData([]);
+      }
     } catch (err: any) {
       console.error('Error fetching narratives data:', err);
       setError('Failed to load narratives data');
