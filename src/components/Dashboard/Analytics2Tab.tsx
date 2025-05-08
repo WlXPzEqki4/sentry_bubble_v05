@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
+import NarrativesTable from '@/components/Dashboard/Charts/NarrativesTable';
 
 const Analytics2Tab: React.FC = () => {
   return (
@@ -14,7 +15,7 @@ const Analytics2Tab: React.FC = () => {
             </p>
           </div>
           
-          {/* Content will be added based on user's upcoming instructions */}
+          <NarrativesTable />
         </CardContent>
       </Card>
     </div>
