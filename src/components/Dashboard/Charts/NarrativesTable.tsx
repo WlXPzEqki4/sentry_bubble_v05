@@ -50,17 +50,17 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     try {
       console.log("Fetching date options...");
       
-      // Using type assertion to bypass TypeScript errors
-      const { data: dateData, error: dateError } = await supabase
-        .from('top_narratives_by_virality' as any)
-        .select('Date')
-        .order('Date', { ascending: false });
+      // Simplify the query using "*" to avoid relationship errors
+      const dateResponse = await supabase
+        .from('top_narratives_by_virality')
+        .select('*');
       
-      if (dateError) {
-        console.error("Date fetch error:", dateError);
-        throw new Error(dateError.message);
+      if (dateResponse.error) {
+        console.error("Date fetch error:", dateResponse.error);
+        throw new Error(dateResponse.error.message);
       }
       
+      const dateData = dateResponse.data;
       console.log("Date data received:", dateData);
       
       // Get unique dates
@@ -84,23 +84,10 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
 
       console.log("Fetching window options...");
       
-      // Using type assertion for window data
-      const { data: windowData, error: windowError } = await supabase
-        .from('top_narratives_by_virality' as any)
-        .select('Window')
-        .order('Window');
-      
-      if (windowError) {
-        console.error("Window fetch error:", windowError);
-        throw new Error(windowError.message);
-      }
-      
-      console.log("Window data received:", windowData);
-      
-      // Get unique windows
-      if (Array.isArray(windowData)) {
+      // Use the same data to extract unique windows
+      if (Array.isArray(dateData)) {
         const windowsSet = new Set<string>();
-        windowData.forEach(item => {
+        dateData.forEach(item => {
           if (item.Window) windowsSet.add(item.Window);
         });
         
@@ -112,7 +99,7 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
           setSelectedWindow(uniqueWindows[0]);
         }
       } else {
-        console.error("Expected array for window data but received:", typeof windowData);
+        console.error("Expected array for window data but received:", typeof dateData);
         throw new Error("Invalid window data format received");
       }
     } catch (err: any) {
@@ -137,24 +124,24 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
         window: selectedWindow 
       });
       
-      // Using type assertion for the main query
-      const { data, error } = await supabase
-        .from('top_narratives_by_virality' as any)
-        .select('Narrative, Percentage, Date, Window')
+      // Get filtered data with simple query and exact column names
+      const response = await supabase
+        .from('top_narratives_by_virality')
+        .select('*')
         .eq('Date', selectedDate)
-        .eq('Window', selectedWindow)
-        .order('Percentage', { ascending: false });
+        .eq('Window', selectedWindow);
       
-      if (error) {
-        console.error("Narratives fetch error:", error);
-        throw new Error(error.message);
+      if (response.error) {
+        console.error("Narratives fetch error:", response.error);
+        throw new Error(response.error.message);
       }
       
+      const data = response.data;
       console.log("Narratives data received:", data);
       
       if (Array.isArray(data)) {
-        // Type the data and convert to our UI format with lowercase properties
-        const formattedData: NarrativeData[] = (data as unknown as TopNarrativesByVirality[]).map((item, index) => ({
+        // Convert data to our UI format with lowercase properties
+        const formattedData: NarrativeData[] = data.map((item, index) => ({
           id: index + 1,
           narrative: String(item.Narrative || ''),
           // Convert percentage from string to number if needed
