@@ -33,6 +33,7 @@ AS $$
 $$;
 
 -- Function to get unique dates from the Top_Narratives_by_Virality table
+-- Both with and without parameters for compatibility
 CREATE OR REPLACE FUNCTION public.get_dates_from_narratives_virality()
 RETURNS TABLE(date text) 
 LANGUAGE sql
@@ -43,8 +44,31 @@ AS $$
   ORDER BY date DESC;
 $$;
 
+-- Add version that takes an empty parameter object for REST API compatibility
+CREATE OR REPLACE FUNCTION public.get_dates_from_narratives_virality(params jsonb)
+RETURNS TABLE(date text) 
+LANGUAGE sql
+AS $$
+  SELECT DISTINCT date
+  FROM top_narratives_by_virality
+  WHERE date IS NOT NULL
+  ORDER BY date DESC;
+$$;
+
 -- Function to get unique windows from the Top_Narratives_by_Virality table
+-- Both with and without parameters for compatibility
 CREATE OR REPLACE FUNCTION public.get_windows_from_narratives_virality()
+RETURNS TABLE(window text) 
+LANGUAGE sql
+AS $$
+  SELECT DISTINCT window
+  FROM top_narratives_by_virality
+  WHERE window IS NOT NULL
+  ORDER BY window;
+$$;
+
+-- Add version that takes an empty parameter object for REST API compatibility
+CREATE OR REPLACE FUNCTION public.get_windows_from_narratives_virality(params jsonb)
 RETURNS TABLE(window text) 
 LANGUAGE sql
 AS $$

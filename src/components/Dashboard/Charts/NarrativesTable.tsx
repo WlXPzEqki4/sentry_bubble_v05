@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import DataTable from '@/components/Dashboard/Charts/DataTable';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from "@/components/ui/use-toast";
 
 interface NarrativesTableProps {
   className?: string;
@@ -19,6 +20,14 @@ interface NarrativeData {
   narrative: string;
   percentage: number;
   date: string;
+  window: string;
+}
+
+interface DateItem {
+  date: string;
+}
+
+interface WindowItem {
   window: string;
 }
 
@@ -36,34 +45,50 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
   // Fetch unique dates and windows for dropdown filters
   const fetchFilterOptions = async () => {
     try {
-      // Using raw SQL query for dates with proper type casting
-      const { data: dateData, error: dateError } = await (supabase
-        .rpc as any)('get_dates_from_narratives_virality');
+      console.log("Fetching date options...");
+      // Using RPC function with empty object params to avoid 'without parameters' error
+      const { data: dateData, error: dateError } = await supabase
+        .rpc('get_dates_from_narratives_virality', {});
       
-      if (dateError) throw new Error(dateError.message);
+      if (dateError) {
+        console.error("Date fetch error:", dateError);
+        throw new Error(dateError.message);
+      }
+      
+      console.log("Date data received:", dateData);
       
       // Explicitly type and filter the data
-      const uniqueDates = dateData 
-        ? Array.from(new Set(dateData.map((item: {date: string}) => item.date))).filter(Boolean) as string[]
+      const typedDateData = dateData as DateItem[];
+      const uniqueDates = typedDateData 
+        ? Array.from(new Set(typedDateData.map(item => item.date))).filter(Boolean) as string[]
         : [];
       
+      console.log("Processed unique dates:", uniqueDates);
       setAvailableDates(uniqueDates);
       
       if (uniqueDates.length > 0) {
         setSelectedDate(uniqueDates[0]);
       }
 
-      // Using raw SQL query for windows with proper type casting
-      const { data: windowData, error: windowError } = await (supabase
-        .rpc as any)('get_windows_from_narratives_virality');
+      console.log("Fetching window options...");
+      // Using RPC function with empty object params to avoid 'without parameters' error
+      const { data: windowData, error: windowError } = await supabase
+        .rpc('get_windows_from_narratives_virality', {});
       
-      if (windowError) throw new Error(windowError.message);
+      if (windowError) {
+        console.error("Window fetch error:", windowError);
+        throw new Error(windowError.message);
+      }
+      
+      console.log("Window data received:", windowData);
       
       // Explicitly type and filter the data
-      const uniqueWindows = windowData 
-        ? Array.from(new Set(windowData.map((item: {window: string}) => item.window))).filter(Boolean) as string[]
+      const typedWindowData = windowData as WindowItem[];
+      const uniqueWindows = typedWindowData 
+        ? Array.from(new Set(typedWindowData.map(item => item.window))).filter(Boolean) as string[]
         : [];
       
+      console.log("Processed unique windows:", uniqueWindows);
       setAvailableWindows(uniqueWindows);
       
       if (uniqueWindows.length > 0) {
@@ -72,6 +97,11 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     } catch (err: any) {
       console.error('Error fetching filter options:', err);
       setError('Failed to load filter options');
+      toast({
+        title: "Error loading filters",
+        description: err.message || 'An unexpected error occurred',
+        variant: "destructive",
+      });
     }
   };
 
@@ -81,18 +111,25 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     setError(null);
     
     try {
-      // Using raw SQL query with parameters
-      const { data, error } = await (supabase
-        .rpc as any)('get_narratives_by_virality', { 
+      console.log("Fetching narratives data with params:", { p_date: selectedDate, p_window: selectedWindow });
+      
+      // Using RPC function with parameters
+      const { data, error } = await supabase
+        .rpc('get_narratives_by_virality', { 
           p_date: selectedDate,
           p_window: selectedWindow
         });
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error("Narratives fetch error:", error);
+        throw new Error(error.message);
+      }
+      
+      console.log("Narratives data received:", data);
       
       // Transform the data to match our interface with proper typing
       const formattedData: NarrativeData[] = data 
-        ? data.map((item: any, index: number) => ({
+        ? data.map((item: { narrative: string; percentage: number; date: string; window: string }, index: number) => ({
             id: index + 1, // Add an ID for each row
             narrative: item.narrative || '',
             percentage: item.percentage || 0,
@@ -101,10 +138,16 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
           }))
         : [];
       
+      console.log("Formatted narratives data:", formattedData);
       setNarrativesData(formattedData);
     } catch (err: any) {
       console.error('Error fetching narratives data:', err);
       setError('Failed to load narratives data');
+      toast({
+        title: "Error loading narratives",
+        description: err.message || 'An unexpected error occurred',
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
