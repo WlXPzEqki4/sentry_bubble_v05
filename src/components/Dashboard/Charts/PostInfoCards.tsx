@@ -30,27 +30,13 @@ interface PlatformData {
 
 // Interface for raw data from Supabase
 interface PostInfoData {
-  Platform: string;
+  UUID: string | number;
+  Set: number;
   Date: string;
   Window: string | number;
-  Total_Interactions: number;
-  Reposts?: number;
-  Retruths?: number;
-  Shares?: number;
-  Quote_Posts?: number;
-  Comments?: number;
-  Likes?: number;
-  Replies?: number;
-  Posts?: number;
-  Views?: number;
-  Forwards?: number;
-  Reactions?: number;
-  Like_Count?: number;
-  Love_Count?: number;
-  Haha_Count?: number;
-  Wow_Count?: number;
-  Sad_Count?: number;
-  Angry_Count?: number;
+  Source: string;
+  Metric: string;
+  Value: string | number;
 }
 
 const PostInfoCards: React.FC<PostInfoCardsProps> = ({ date, window, className = "" }) => {
@@ -70,6 +56,7 @@ const PostInfoCards: React.FC<PostInfoCardsProps> = ({ date, window, className =
       case 'telegram':
         return <span className="flex items-center justify-center h-6 w-6 text-blue-400 font-bold">T</span>;
       case 'tik tok':
+      case 'tiktok':
         // Using a text element instead of the TikTok icon that's not available
         return <span className="flex items-center justify-center h-6 w-6 text-black font-bold">TT</span>;
       case 'truth social':
@@ -83,37 +70,71 @@ const PostInfoCards: React.FC<PostInfoCardsProps> = ({ date, window, className =
 
   // Transform raw data into the format we need for display
   const transformData = (data: PostInfoData[]): PlatformData[] => {
-    return data.map(item => {
+    // Group data by Source (platform)
+    const platformGroups = data.reduce<Record<string, PostInfoData[]>>((acc, item) => {
+      const source = item.Source;
+      if (!acc[source]) {
+        acc[source] = [];
+      }
+      acc[source].push(item);
+      return acc;
+    }, {});
+
+    // Transform grouped data into our UI format
+    return Object.entries(platformGroups).map(([platformName, items]) => {
+      // Find Total Interactions value
+      const totalInteractionsItem = items.find(item => item.Metric === "Total Interactions");
+      const totalInteractions = totalInteractionsItem ? 
+        parseInt(String(totalInteractionsItem.Value).replace(/,/g, ''), 10) : 0;
+        
+      // Create platform data object
       const platformData: PlatformData = {
-        platform: item.Platform,
-        icon: getPlatformIcon(item.Platform),
-        total_interactions: item.Total_Interactions,
+        platform: platformName,
+        icon: getPlatformIcon(platformName),
+        total_interactions: totalInteractions,
         metrics: []
       };
 
-      // Add metrics based on what's available in the data
-      if (item.Reposts) platformData.metrics.push({ name: 'Reposts', value: item.Reposts });
-      if (item.Retruths) platformData.metrics.push({ name: 'Retruths', value: item.Retruths });
-      if (item.Shares) platformData.metrics.push({ name: 'Shares', value: item.Shares });
-      if (item.Quote_Posts) platformData.metrics.push({ name: 'Quote Posts', value: item.Quote_Posts });
-      if (item.Comments) platformData.metrics.push({ name: 'Comments', value: item.Comments });
-      if (item.Likes) platformData.metrics.push({ name: 'Likes', value: item.Likes });
-      if (item.Replies) platformData.metrics.push({ name: 'Replies', value: item.Replies });
-      if (item.Posts) platformData.metrics.push({ name: 'Posts', value: item.Posts });
-      if (item.Views) platformData.metrics.push({ name: 'Views', value: item.Views.toLocaleString() });
-      if (item.Forwards) platformData.metrics.push({ name: 'Forwards', value: item.Forwards });
-      if (item.Reactions) platformData.metrics.push({ name: 'Reactions', value: item.Reactions });
-
-      // Add reaction data if available
-      if (item.Like_Count || item.Love_Count || item.Haha_Count || item.Wow_Count || item.Sad_Count || item.Angry_Count) {
-        platformData.reactions = [];
-        
-        if (item.Like_Count) platformData.reactions.push({ name: 'Like', emoji: '👍', value: item.Like_Count });
-        if (item.Love_Count) platformData.reactions.push({ name: 'Love', emoji: '❤️', value: item.Love_Count });
-        if (item.Haha_Count) platformData.reactions.push({ name: 'Haha', emoji: '😄', value: item.Haha_Count });
-        if (item.Wow_Count) platformData.reactions.push({ name: 'Wow', emoji: '😲', value: item.Wow_Count });
-        if (item.Sad_Count) platformData.reactions.push({ name: 'Sad', emoji: '😢', value: item.Sad_Count });
-        if (item.Angry_Count) platformData.reactions.push({ name: 'Angry', emoji: '😠', value: item.Angry_Count });
+      // Add all other metrics
+      items.forEach(item => {
+        if (item.Metric) {
+          const metricName = String(item.Metric);
+          const metricValue = String(item.Value);
+          
+          const reactionMetrics = ["Like", "Love", "Haha", "Wow", "Sad", "Angry"];
+          
+          // Handle regular metrics
+          if (!reactionMetrics.includes(metricName)) {
+            platformData.metrics.push({
+              name: metricName,
+              value: metricValue
+            });
+          }
+        }
+      });
+      
+      // Handle reactions separately
+      const reactionItems = items.filter(item => 
+        ["Like", "Love", "Haha", "Wow", "Sad", "Angry"].includes(String(item.Metric))
+      );
+      
+      if (reactionItems.length > 0) {
+        platformData.reactions = reactionItems.map(item => {
+          const emojiMap: Record<string, string> = {
+            "Like": "👍",
+            "Love": "❤️",
+            "Haha": "😄",
+            "Wow": "😲",
+            "Sad": "😢",
+            "Angry": "😠"
+          };
+          
+          return {
+            name: String(item.Metric),
+            emoji: emojiMap[String(item.Metric)] || "👍",
+            value: parseInt(String(item.Value).replace(/,/g, ''), 10)
+          };
+        });
       }
 
       return platformData;
