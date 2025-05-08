@@ -31,3 +31,38 @@ AS $$
   WHERE published_at IS NOT NULL
   ORDER BY date DESC;
 $$;
+
+-- Function to get unique dates from the Top_Narratives_by_Virality table
+CREATE OR REPLACE FUNCTION public.get_dates_from_narratives_virality()
+RETURNS TABLE(date text) 
+LANGUAGE sql
+AS $$
+  SELECT DISTINCT date
+  FROM top_narratives_by_virality
+  WHERE date IS NOT NULL
+  ORDER BY date DESC;
+$$;
+
+-- Function to get unique windows from the Top_Narratives_by_Virality table
+CREATE OR REPLACE FUNCTION public.get_windows_from_narratives_virality()
+RETURNS TABLE(window text) 
+LANGUAGE sql
+AS $$
+  SELECT DISTINCT window
+  FROM top_narratives_by_virality
+  WHERE window IS NOT NULL
+  ORDER BY window;
+$$;
+
+-- Function to get narratives filtered by date and window
+CREATE OR REPLACE FUNCTION public.get_narratives_by_virality(p_date text, p_window text)
+RETURNS TABLE(narrative text, percentage numeric, date text, window text) 
+LANGUAGE sql
+AS $$
+  SELECT narrative, percentage, date, window
+  FROM top_narratives_by_virality
+  WHERE 
+    (date = p_date OR p_date IS NULL) AND
+    (window = p_window OR p_window IS NULL)
+  ORDER BY percentage DESC;
+$$;

@@ -37,8 +37,8 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
   const fetchFilterOptions = async () => {
     try {
       // Using raw SQL query for dates since the table isn't in the TypeScript types
-      const { data: dateData, error: dateError } = await supabase
-        .rpc('get_dates_from_narratives_virality');
+      const { data: dateData, error: dateError } = await (supabase
+        .rpc as any)('get_dates_from_narratives_virality');
       
       if (dateError) throw new Error(dateError.message);
       
@@ -49,8 +49,8 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       }
 
       // Using raw SQL query for windows
-      const { data: windowData, error: windowError } = await supabase
-        .rpc('get_windows_from_narratives_virality');
+      const { data: windowData, error: windowError } = await (supabase
+        .rpc as any)('get_windows_from_narratives_virality');
       
       if (windowError) throw new Error(windowError.message);
       
@@ -72,8 +72,8 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     
     try {
       // Using raw SQL query with parameters
-      const { data, error } = await supabase
-        .rpc('get_narratives_by_virality', { 
+      const { data, error } = await (supabase
+        .rpc as any)('get_narratives_by_virality', { 
           p_date: selectedDate,
           p_window: selectedWindow
         });
