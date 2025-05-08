@@ -23,6 +23,14 @@ interface NarrativeData {
   window: string;
 }
 
+// Using a type definition for the table that doesn't exist in our Database types
+type TopNarrativesByVirality = {
+  narrative: string;
+  percentage: number;
+  date: string;
+  window: string;
+}
+
 const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => {
   const [narrativesData, setNarrativesData] = useState<NarrativeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,9 +47,9 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     try {
       console.log("Fetching date options...");
       
-      // Use generic query builder instead of typed access
+      // Using type assertion to bypass TypeScript errors
       const { data: dateData, error: dateError } = await supabase
-        .from('top_narratives_by_virality')
+        .from('top_narratives_by_virality' as any)
         .select('date')
         .order('date', { ascending: false });
       
@@ -73,9 +81,9 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
 
       console.log("Fetching window options...");
       
-      // Use generic query builder for windows
+      // Using type assertion for window data
       const { data: windowData, error: windowError } = await supabase
-        .from('top_narratives_by_virality')
+        .from('top_narratives_by_virality' as any)
         .select('window')
         .order('window');
       
@@ -126,9 +134,9 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
         window: selectedWindow 
       });
       
-      // Use generic query builder with filters
+      // Using type assertion for the main query
       const { data, error } = await supabase
-        .from('top_narratives_by_virality')
+        .from('top_narratives_by_virality' as any)
         .select('narrative, percentage, date, window')
         .eq('date', selectedDate)
         .eq('window', selectedWindow)
@@ -142,15 +150,10 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
       console.log("Narratives data received:", data);
       
       if (Array.isArray(data)) {
-        // Type assertion to help TypeScript understand the structure
-        type NarrativeItem = {
-          narrative?: string;
-          percentage?: number;
-          date?: string;
-          window?: string;
-        };
+        // Type the data as our custom type
+        const typedData = data as TopNarrativesByVirality[];
         
-        const formattedData: NarrativeData[] = (data as NarrativeItem[]).map((item, index) => ({
+        const formattedData: NarrativeData[] = typedData.map((item, index) => ({
           id: index + 1,
           narrative: item.narrative || '',
           percentage: item.percentage || 0,
