@@ -50,17 +50,20 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
     try {
       console.log("Fetching date options...");
       
-      // Simplify the query using "*" to avoid relationship errors
+      // Use type assertion to handle the table that's not in the TypeScript definitions
       const dateResponse = await supabase
-        .from('top_narratives_by_virality')
-        .select('*');
+        .from('top_narratives_by_virality' as any)
+        .select('*') as unknown as { 
+          data: TopNarrativesByVirality[] | null,
+          error: any
+        };
       
       if (dateResponse.error) {
         console.error("Date fetch error:", dateResponse.error);
         throw new Error(dateResponse.error.message);
       }
       
-      const dateData = dateResponse.data;
+      const dateData = dateResponse.data || [];
       console.log("Date data received:", dateData);
       
       // Get unique dates
@@ -124,19 +127,22 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
         window: selectedWindow 
       });
       
-      // Get filtered data with simple query and exact column names
+      // Use type assertion for the table query
       const response = await supabase
-        .from('top_narratives_by_virality')
+        .from('top_narratives_by_virality' as any)
         .select('*')
         .eq('Date', selectedDate)
-        .eq('Window', selectedWindow);
+        .eq('Window', selectedWindow) as unknown as {
+          data: TopNarrativesByVirality[] | null,
+          error: any
+        };
       
       if (response.error) {
         console.error("Narratives fetch error:", response.error);
         throw new Error(response.error.message);
       }
       
-      const data = response.data;
+      const data = response.data || [];
       console.log("Narratives data received:", data);
       
       if (Array.isArray(data)) {
