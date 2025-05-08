@@ -21,12 +21,12 @@ const WidgetsTab: React.FC<WidgetsTabProps> = ({ permissions, hasPermission, has
       {weatherPermissions.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {hasPermission('weather', 'abu_dhabi') && (
-              <WeatherWidget city="Abu Dhabi" />
+            {hasPermission('weather', 'khartoum') && (
+              <WeatherWidget city="Khartoum" />
             )}
             
-            {hasPermission('weather', 'dubai') && (
-              <WeatherWidget city="Dubai" />
+            {hasPermission('weather', 'omdurman') && (
+              <WeatherWidget city="Omdurman" />
             )}
           </div>
 
