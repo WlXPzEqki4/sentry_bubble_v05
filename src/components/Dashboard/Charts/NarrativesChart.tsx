@@ -246,17 +246,12 @@ const NarrativesChart: React.FC<NarrativesChartProps> = ({ date, window, classNa
             <Treemap
               data={chartData}
               dataKey="value"
-              nameKey="name"
               stroke="#fff"
               fill="#8884d8"
               isAnimationActive={true}
               animationDuration={1000}
+              content={CustomTreemapContent}
             >
-              {chartData.map((item, index) => (
-                <Treemap key={`item-${index}`} dataKey="value" name={item.name} fill={item.color}>
-                  {/* Child components for each treemap item */}
-                </Treemap>
-              ))}
               <Tooltip content={<CustomTooltip />} />
             </Treemap>
           </ResponsiveContainer>
