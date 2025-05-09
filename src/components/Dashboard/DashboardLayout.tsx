@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, LogOut, User } from 'lucide-react';
@@ -37,9 +38,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
         
         <div className="flex-1">
-          {/* Widget Access Section - Updated heading */}
+          {/* Widget Access Section - Updated styling for the heading */}
           <div className="px-4 mt-6">
-            <h3 className="text-lg font-bold text-gray-800 uppercase tracking-wider mb-4">Classification & Releasability Controls</h3>
+            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
+              Classification & Releasability Controls
+            </h3>
             
             {userData.username ? (
               <UserPermissionsDisplay username={userData.username} />
