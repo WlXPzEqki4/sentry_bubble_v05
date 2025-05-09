@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Select, 
@@ -10,6 +9,7 @@ import {
 import { Label } from "@/components/ui/label";
 import DataTable from '@/components/Dashboard/Charts/DataTable';
 import PostInfoCards from '@/components/Dashboard/Charts/PostInfoCards';
+import NarrativesChart from '@/components/Dashboard/Charts/NarrativesChart';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 
@@ -298,6 +298,15 @@ const NarrativesTable: React.FC<NarrativesTableProps> = ({ className = "" }) => 
           date={selectedDate} 
           window={selectedWindow}
           className="mt-8" 
+        />
+      )}
+      
+      {/* Add the new NarrativesChart component */}
+      {selectedDate && selectedWindow && (
+        <NarrativesChart
+          date={selectedDate}
+          window={selectedWindow}
+          className="mt-8"
         />
       )}
     </div>
