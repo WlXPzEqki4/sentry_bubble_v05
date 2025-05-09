@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Info } from "lucide-react";
@@ -145,6 +144,44 @@ const NarrativesChart: React.FC<NarrativesChartProps> = ({ date, window, classNa
     return null;
   };
 
+  // Custom content component for treemap cells
+  const CustomTreemapContent = (props: any) => {
+    const { x, y, width, height, index } = props;
+    const item = chartData[index];
+
+    if (!item) return null;
+
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          style={{
+            fill: item.color,
+            stroke: '#fff',
+            strokeWidth: 2,
+            cursor: 'pointer',
+          }}
+        />
+        {width > 30 && height > 30 ? (
+          <text
+            x={x + width / 2}
+            y={y + height / 2}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="#fff"
+            fontSize={14}
+            fontWeight="bold"
+          >
+            {item.name}
+          </text>
+        ) : null}
+      </g>
+    );
+  };
+
   // Fetch data when date or window changes
   useEffect(() => {
     if (date && window) {
@@ -214,40 +251,12 @@ const NarrativesChart: React.FC<NarrativesChartProps> = ({ date, window, classNa
               fill="#8884d8"
               isAnimationActive={true}
               animationDuration={1000}
-              content={({ x, y, width, height, index, payload }) => {
-                // Content renderer function for the treemap cells
-                const item = chartData[index];
-                return (
-                  <g>
-                    <rect
-                      x={x}
-                      y={y}
-                      width={width}
-                      height={height}
-                      style={{
-                        fill: item.color,
-                        stroke: '#fff',
-                        strokeWidth: 2,
-                        cursor: 'pointer',
-                      }}
-                    />
-                    {width > 30 && height > 30 ? (
-                      <text
-                        x={x + width / 2}
-                        y={y + height / 2}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fill="#fff"
-                        fontSize={14}
-                        fontWeight="bold"
-                      >
-                        {item.name}
-                      </text>
-                    ) : null}
-                  </g>
-                );
-              }}
             >
+              {chartData.map((item, index) => (
+                <Treemap key={`item-${index}`} dataKey="value" name={item.name} fill={item.color}>
+                  {/* Child components for each treemap item */}
+                </Treemap>
+              ))}
               <Tooltip content={<CustomTooltip />} />
             </Treemap>
           </ResponsiveContainer>
