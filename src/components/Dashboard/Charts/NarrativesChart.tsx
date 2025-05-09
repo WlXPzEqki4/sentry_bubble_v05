@@ -212,39 +212,18 @@ const NarrativesChart: React.FC<NarrativesChartProps> = ({ date, window, classNa
               nameKey="name"
               stroke="#fff"
               fill="#8884d8"
-              content={({ root, depth, x, y, width, height, index, payload, colors, rank, name }) => {
-                const item = payload as unknown as NarrativeChartData;
-                return (
-                  <g>
-                    <rect
-                      x={x}
-                      y={y}
-                      width={width}
-                      height={height}
-                      style={{
-                        fill: item.color,
-                        stroke: '#fff',
-                        strokeWidth: 2,
-                        cursor: 'pointer',
-                      }}
-                    />
-                    {width > 30 && height > 30 ? (
-                      <text
-                        x={x + width / 2}
-                        y={y + height / 2}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fill="#fff"
-                        fontSize={14}
-                        fontWeight="bold"
-                      >
-                        {item.name}
-                      </text>
-                    ) : null}
-                  </g>
-                );
-              }}
+              isAnimationActive={true}
+              animationDuration={1000}
             >
+              {/* Instead of a function prop, use a rendered child component */}
+              {chartData.map((entry, index) => (
+                <Treemap.Child
+                  key={`cell-${index}`}
+                  fill={entry.color}
+                  stroke="#fff"
+                  index={index}
+                />
+              ))}
               <Tooltip content={<CustomTooltip />} />
             </Treemap>
           </ResponsiveContainer>
