@@ -1,11 +1,17 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Toggle } from '@/components/ui/toggle';
-import { RotateCw, RotateCcw, Flag, MapPin } from 'lucide-react';
+import { RotateCw, RotateCcw, Flag, MapPin, Globe } from 'lucide-react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // List of African countries with their flags and coordinates
 const africanCountries = [
@@ -111,6 +117,24 @@ const sudanLocations = [
   }
 ];
 
+// Available map styles
+const mapStyles = [
+  { id: 'light-v11', name: 'Light' },
+  { id: 'dark-v11', name: 'Dark' },
+  { id: 'streets-v12', name: 'Streets' },
+  { id: 'outdoors-v12', name: 'Outdoors' },
+  { id: 'satellite-v9', name: 'Satellite' },
+  { id: 'satellite-streets-v12', name: 'Satellite Streets' }
+];
+
+// Background options
+const backgroundOptions = [
+  { id: 'stars', name: 'Stars (Default)' },
+  { id: 'white', name: 'White' },
+  { id: 'black', name: 'Black' },
+  { id: 'gray', name: 'Gray' }
+];
+
 const CountryButton = ({ country, isSelected, onClick }: { 
   country: { name: string; flag: string; coordinates: number[] }; 
   isSelected: boolean;
@@ -144,6 +168,8 @@ const MapTab: React.FC = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [isAnimatingToCountry, setIsAnimatingToCountry] = useState(false);
+  const [mapStyle, setMapStyle] = useState('light-v11');
+  const [backgroundStyle, setBackgroundStyle] = useState('stars');
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -153,7 +179,7 @@ const MapTab: React.FC = () => {
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
+      style: `mapbox://styles/mapbox/${mapStyle}`,
       projection: 'globe',
       zoom: 1.5,
       center: [0, 0], // Starting at [0,0] before animation
@@ -168,13 +194,21 @@ const MapTab: React.FC = () => {
       'top-right'
     );
 
+    // Apply background style
+    mapContainer.current.style.backgroundColor = getBackgroundColor(backgroundStyle);
+
     // Add atmosphere and fog effects for more realistic 3D appearance
     map.current.on('style.load', () => {
-      map.current?.setFog({
-        color: 'rgb(255, 255, 255)',
-        'high-color': 'rgb(200, 200, 225)',
-        'horizon-blend': 0.2,
-      });
+      if (backgroundStyle === 'stars') {
+        map.current?.setFog({
+          color: 'rgb(255, 255, 255)',
+          'high-color': 'rgb(200, 200, 225)',
+          'horizon-blend': 0.2,
+        });
+      } else {
+        // Remove fog for non-stars background
+        map.current?.setFog(null);
+      }
       
       // Improved animation sequence to focus on Africa after the map loads
       setTimeout(() => {
@@ -199,7 +233,22 @@ const MapTab: React.FC = () => {
       // Clear any existing markers
       clearMarkers();
     };
-  }, []);
+  }, [mapStyle, backgroundStyle]);
+
+  // Helper function to get background color
+  const getBackgroundColor = (style: string): string => {
+    switch (style) {
+      case 'white':
+        return '#ffffff';
+      case 'black':
+        return '#000000';
+      case 'gray':
+        return '#f3f3f3';
+      case 'stars':
+      default:
+        return 'transparent'; // For stars background
+    }
+  };
 
   // Function to clear existing markers
   const clearMarkers = () => {
@@ -376,23 +425,85 @@ const MapTab: React.FC = () => {
     }
   };
 
+  // Handle map style change
+  const handleMapStyleChange = (value: string) => {
+    setMapStyle(value);
+    if (map.current) {
+      map.current.setStyle(`mapbox://styles/mapbox/${value}`);
+    }
+  };
+
+  // Handle background style change
+  const handleBackgroundStyleChange = (value: string) => {
+    setBackgroundStyle(value);
+    if (mapContainer.current) {
+      mapContainer.current.style.backgroundColor = getBackgroundColor(value);
+      
+      // Update fog effect based on background style
+      if (map.current) {
+        if (value === 'stars') {
+          map.current.setFog({
+            color: 'rgb(255, 255, 255)',
+            'high-color': 'rgb(200, 200, 225)',
+            'horizon-blend': 0.2,
+          });
+        } else {
+          map.current.setFog(null);
+        }
+      }
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <h2 className="text-xl font-semibold">Global Visualization</h2>
-        <Toggle 
-          pressed={rotationEnabled} 
-          onPressedChange={handleToggleRotation} 
-          aria-label="Toggle rotation"
-          className="ml-2"
-        >
-          {rotationEnabled ? (
-            <RotateCw className="h-4 w-4 mr-2" />
-          ) : (
-            <RotateCcw className="h-4 w-4 mr-2" />
-          )}
-          {rotationEnabled ? 'Rotation On' : 'Rotation Off'}
-        </Toggle>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-gray-500" />
+            <Select value={mapStyle} onValueChange={handleMapStyleChange}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Map Style" />
+              </SelectTrigger>
+              <SelectContent>
+                {mapStyles.map((style) => (
+                  <SelectItem key={style.id} value={style.id}>
+                    {style.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-gray-500" />
+            <Select value={backgroundStyle} onValueChange={handleBackgroundStyleChange}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Background" />
+              </SelectTrigger>
+              <SelectContent>
+                {backgroundOptions.map((bg) => (
+                  <SelectItem key={bg.id} value={bg.id}>
+                    {bg.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Toggle 
+            pressed={rotationEnabled} 
+            onPressedChange={handleToggleRotation} 
+            aria-label="Toggle rotation"
+          >
+            {rotationEnabled ? (
+              <RotateCw className="h-4 w-4 mr-2" />
+            ) : (
+              <RotateCcw className="h-4 w-4 mr-2" />
+            )}
+            {rotationEnabled ? 'Rotation On' : 'Rotation Off'}
+          </Toggle>
+        </div>
       </div>
       <p className="text-sm text-gray-500 mb-6">
         Interactive 3D globe visualization. Drag to rotate, scroll to zoom.
