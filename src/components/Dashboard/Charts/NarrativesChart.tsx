@@ -144,7 +144,7 @@ const NarrativesChart: React.FC<NarrativesChartProps> = ({ date, window, classNa
     return null;
   };
 
-  // Custom content component for treemap cells
+  // Fix: Define the CustomTreemapContent component but don't pass it directly
   const CustomTreemapContent = (props: any) => {
     const { x, y, width, height, index } = props;
     const item = chartData[index];
@@ -250,7 +250,7 @@ const NarrativesChart: React.FC<NarrativesChartProps> = ({ date, window, classNa
               fill="#8884d8"
               isAnimationActive={true}
               animationDuration={1000}
-              content={CustomTreemapContent}
+              content={<CustomTreemapContent />}
             >
               <Tooltip content={<CustomTooltip />} />
             </Treemap>
