@@ -115,21 +115,28 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     // Add drag events
     sigma.getMouseCaptor().on("mousedown", (e) => {
-      // Instead of using getNodeAtPosition directly, use renderer to find node
-      const renderer = sigma.getRenderer();
-      const mousePosition = sigma.viewportToGraph(e);
+      // Instead of trying to use getRenderer (which doesn't exist), 
+      // use a custom approach to find the node under the mouse
+      const mouseCaptor = sigma.getMouseCaptor();
+      const camera = sigma.getCamera();
+      
+      // Convert screen coordinates to sigma viewport coordinates
+      const mouseX = e.x;
+      const mouseY = e.y;
+      
+      // Find the closest node to mouse position
       let closestNode: string | null = null;
       let minDistance = Infinity;
       
-      // Find the closest node to mouse position
       graph.forEachNode((nodeId) => {
         const attributes = graph.getNodeAttributes(nodeId);
-        const dx = attributes.x - mousePosition.x;
-        const dy = attributes.y - mousePosition.y;
+        const nodePosition = sigma.graphToViewport(attributes.x, attributes.y);
+        const dx = nodePosition.x - mouseX;
+        const dy = nodePosition.y - mouseY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         // Adjust the hit radius based on node size
-        const hitRadius = attributes.size / 10 + 0.02;
+        const hitRadius = attributes.size * camera.ratio;
         
         if (distance < minDistance && distance < hitRadius) {
           minDistance = distance;
@@ -150,15 +157,17 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     sigma.getMouseCaptor().on("mousemove", (e) => {
       if (isDragging && draggedNode && handleNodeDrag) {
         const camera = sigma.getCamera();
-        // Use correct method to convert viewport to graph coordinates
-        const pos = sigma.viewportToGraphCoordinates(e.x, e.y);
+        
+        // Convert viewport coordinates to graph coordinates
+        // Use the current camera state to convert
+        const position = camera.viewportToGraph({x: e.x, y: e.y});
         
         // Update node position in graph
-        graph.setNodeAttribute(draggedNode, "x", pos.x);
-        graph.setNodeAttribute(draggedNode, "y", pos.y);
+        graph.setNodeAttribute(draggedNode, "x", position.x);
+        graph.setNodeAttribute(draggedNode, "y", position.y);
         
         // Call the handler to update the physics simulation
-        handleNodeDrag(draggedNode, pos.x, pos.y);
+        handleNodeDrag(draggedNode, position.x, position.y);
         
         // Prevent the camera from moving while dragging
         e.preventSigmaDefault();
