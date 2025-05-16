@@ -97,8 +97,8 @@ export const useSigmaInteraction = ({
         
         // Completely disable sigma's mouse handlers during node dragging
         sigma.getMouseCaptor().handleDown = () => {};
-        sigma.getMouseCaptor().handleUp = () => {};
         sigma.getMouseCaptor().handleMove = () => {};
+        sigma.getMouseCaptor().handleUp = () => {};
         
         // Change cursor to grabbing to indicate active drag
         if (containerRef.current) {
@@ -128,6 +128,10 @@ export const useSigmaInteraction = ({
         
         // Refresh to show new position
         sigma.refresh();
+        
+        // Prevent any other mouse events
+        event.preventDefault();
+        event.stopPropagation();
       } catch (error) {
         console.error("Error during node dragging:", error);
       }
@@ -136,10 +140,6 @@ export const useSigmaInteraction = ({
     // Mouse up handler to end dragging
     const handleMouseUp = (event: MouseEvent) => {
       if (isDragging && draggedNode) {
-        // Prevent triggering a click event
-        event.preventDefault();
-        event.stopPropagation();
-        
         // End dragging
         setIsDragging(false);
         setDraggedNode(null);
@@ -155,6 +155,10 @@ export const useSigmaInteraction = ({
         if (containerRef.current) {
           containerRef.current.style.cursor = hoveredNode ? 'grab' : 'default';
         }
+        
+        // Prevent the event from being processed further
+        event.preventDefault();
+        event.stopPropagation();
       }
     };
 
