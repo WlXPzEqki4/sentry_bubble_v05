@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { toast } from "sonner";
 
 export interface NetworkOption {
   id: string;
@@ -42,18 +43,27 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
           },
         ];
         
+        const normalizedUserClassLevel = userClassificationLevel.toLowerCase().replace(/[_\s-]+/g, '');
+        console.log(`User classification level: ${userClassificationLevel} (normalized: ${normalizedUserClassLevel})`);
+        
         // Filter networks based on user classification level
         const filteredNetworks = mockNetworks.filter(network => {
+          const normalizedNetworkClass = network.classification_level.toLowerCase().replace(/[_\s-]+/g, '');
+          console.log(`Network: ${network.name}, Class: ${network.classification_level} (normalized: ${normalizedNetworkClass})`);
+          
           // Simple classification hierarchy check
-          if (userClassificationLevel === 'top_secret') return true;
-          if (userClassificationLevel === 'secret' && network.classification_level !== 'top_secret') return true;
-          if (userClassificationLevel === 'unclassified' && network.classification_level === 'unclassified') return true;
+          if (normalizedUserClassLevel === 'topsecret') return true;
+          if (normalizedUserClassLevel === 'secret' && normalizedNetworkClass !== 'topsecret') return true;
+          if (normalizedUserClassLevel === 'unclassified' && normalizedNetworkClass === 'unclassified') return true;
+          
           return false;
         });
         
+        console.log(`Filtered networks: ${filteredNetworks.length}`);
+        
         setNetworkOptions(filteredNetworks);
         
-        // Set default selected network
+        // Set default selected network if we have options and nothing is currently selected
         if (filteredNetworks.length > 0 && !selectedNetwork) {
           setSelectedNetwork(filteredNetworks[0].id);
         }
@@ -66,7 +76,12 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
     };
 
     fetchNetworks();
-  }, [userClassificationLevel, selectedNetwork]); // Re-fetch when user classification level changes
+  }, [userClassificationLevel, selectedNetwork]);
+
+  useEffect(() => {
+    // Show notification that we're using demo data
+    toast.info('Using demo network visualization data');
+  }, []);
 
   return {
     networkOptions,

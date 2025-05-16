@@ -3,7 +3,6 @@ import React from 'react';
 import BubbleChartNetworkSelector from './BubbleChartNetworkSelector';
 import BubbleChartVisualization from './BubbleChartVisualization';
 import { useBubbleChartNetworks } from '@/hooks/use-bubble-chart-networks';
-import { toast } from "sonner";
 
 interface BubbleChartTabProps {
   userClassificationLevel?: string;
@@ -18,10 +17,11 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
     error: networksError
   } = useBubbleChartNetworks(userClassificationLevel);
 
-  // Show notification that we're using demo data
+  // Display user classification level in console for debugging
   React.useEffect(() => {
-    toast.info('Using demo network visualization data');
-  }, []);
+    console.log(`BubbleChartTab - User classification level: ${userClassificationLevel}`);
+    console.log(`Available network options: ${networkOptions.length}`);
+  }, [userClassificationLevel, networkOptions]);
 
   return (
     <div className="space-y-4">
@@ -44,6 +44,11 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
       {networksError ? (
         <div className="p-8 text-center">
           <p className="text-red-500">Error loading networks: {networksError.message}</p>
+        </div>
+      ) : networkOptions.length === 0 && !networksLoading ? (
+        <div className="p-8 text-center bg-gray-50 rounded-lg">
+          <p className="text-gray-600">No networks available for your classification level ({userClassificationLevel}).</p>
+          <p className="text-sm text-gray-500 mt-2">Network data is currently using demo visualization only.</p>
         </div>
       ) : (
         <BubbleChartVisualization 
