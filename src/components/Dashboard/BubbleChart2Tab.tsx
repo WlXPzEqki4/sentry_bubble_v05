@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { ForceGraph2D } from 'react-force-graph';
 
@@ -21,6 +21,9 @@ interface GraphData {
 }
 
 const BubbleChart2Tab: React.FC = () => {
+  // Reference to the ForceGraph instance
+  const forceGraphRef = useRef<any>(null);
+  
   const [graphData] = useState<GraphData>({
     nodes: [
       { id: "Romeo", family: "Montague", val: 20 },
@@ -89,6 +92,26 @@ const BubbleChart2Tab: React.FC = () => {
   const handleForceConfigChange = (param: keyof typeof forceConfig, value: number) => {
     setForceConfig(prev => ({ ...prev, [param]: value }));
   };
+
+  // Apply force changes when configuration changes
+  useEffect(() => {
+    // Only apply changes if we have a reference to the force graph
+    if (!forceGraphRef.current) return;
+    
+    const fg = forceGraphRef.current;
+    
+    // Apply charge (repulsion) force
+    fg.d3Force('charge').strength(forceConfig.chargeStrength);
+    
+    // Apply link distance
+    fg.d3Force('link').distance(forceConfig.linkDistance);
+    
+    // Apply center force
+    fg.d3Force('center').strength(forceConfig.centerStrength);
+    
+    // Reheat simulation to apply changes
+    fg.d3ReheatSimulation();
+  }, [forceConfig]);
 
   // Color mapping for families
   const getFamilyColor = (family: string): string => {
@@ -209,24 +232,11 @@ const BubbleChart2Tab: React.FC = () => {
           
           <div className="h-[600px] w-full border border-gray-200 rounded-md overflow-hidden">
             <ForceGraph2D
+              ref={forceGraphRef}
               graphData={graphData}
               nodeCanvasObject={nodeCanvasObject}
               linkWidth={link => (link as any).value / 2}
               linkColor={() => '#999'}
-              // ForceGraph2D doesn't have a direct d3Force prop
-              // Instead we should use onEngineStop to configure forces after the simulation starts
-              onEngineStop={(engine) => {
-                if (engine) {
-                  // Apply charge (repulsion) force
-                  engine.d3Force('charge').strength(forceConfig.chargeStrength);
-                  
-                  // Apply link distance
-                  engine.d3Force('link').distance(forceConfig.linkDistance);
-                  
-                  // Apply center force
-                  engine.d3Force('center').strength(forceConfig.centerStrength);
-                }
-              }}
               d3VelocityDecay={0.3}
               cooldownTime={2000}
             />
