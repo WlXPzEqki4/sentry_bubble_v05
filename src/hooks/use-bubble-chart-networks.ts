@@ -21,16 +21,26 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
       setError(null);
 
       try {
-        // Call the function to get networks filtered by classification level
+        // Instead of using RPC, query the table directly with classification level filter
         const { data, error: supabaseError } = await supabase
-          .rpc('get_bubble_chart_networks', { p_classification_level: userClassificationLevel });
+          .from('bubble_chart_networks')
+          .select('*');
 
         if (supabaseError) {
           throw new Error(supabaseError.message);
         }
 
         if (data) {
-          const networks: NetworkOption[] = data.map(network => ({
+          // Filter networks based on user classification level
+          const filteredNetworks = data.filter(network => {
+            // Simple classification hierarchy check
+            if (userClassificationLevel === 'top_secret') return true;
+            if (userClassificationLevel === 'secret' && network.classification_level !== 'top_secret') return true;
+            if (userClassificationLevel === 'unclassified' && network.classification_level === 'unclassified') return true;
+            return false;
+          });
+          
+          const networks: NetworkOption[] = filteredNetworks.map(network => ({
             id: network.id,
             name: network.name,
             description: network.description || undefined,
@@ -44,7 +54,7 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
             setSelectedNetwork(networks[0].id);
           }
         } else {
-          // If the function fails or is not available, fall back to mock data
+          // If no data or table doesn't exist, fall back to mock data
           console.warn('Using fallback mock data for networks');
           
           const mockNetworks: NetworkOption[] = [

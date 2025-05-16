@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { MarkerType } from 'reactflow';
@@ -35,17 +36,21 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
       setError(null);
 
       try {
-        // Fetch nodes from the database
+        // Fetch nodes from the database using direct table query
         const { data: nodesData, error: nodesError } = await supabase
-          .rpc('get_bubble_chart_nodes', { p_network_id: networkId });
+          .from('bubble_chart_nodes')
+          .select('*')
+          .eq('network_id', networkId);
 
         if (nodesError) {
           throw new Error(`Error fetching nodes: ${nodesError.message}`);
         }
 
-        // Fetch edges from the database
+        // Fetch edges from the database using direct table query
         const { data: edgesData, error: edgesError } = await supabase
-          .rpc('get_bubble_chart_edges', { p_network_id: networkId });
+          .from('bubble_chart_edges')
+          .select('*')
+          .eq('network_id', networkId);
 
         if (edgesError) {
           throw new Error(`Error fetching edges: ${edgesError.message}`);

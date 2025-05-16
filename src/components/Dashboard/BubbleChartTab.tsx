@@ -20,61 +20,65 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
     error: networksError
   } = useBubbleChartNetworks(userClassificationLevel);
 
-  // Effect to populate the database on first load
+  // Effect to check if tables exist and populate if needed
   useEffect(() => {
-    const populateBubbleChartData = async () => {
+    const checkAndPopulateBubbleChartData = async () => {
       try {
-        // Call the Edge Function to populate data
-        const { data, error } = await supabase.functions.invoke('populate-bubble-charts');
+        // First check if the bubble_chart_networks table exists
+        const { data: tableExists, error: tableError } = await supabase
+          .from('bubble_chart_networks')
+          .select('id')
+          .limit(1);
         
-        if (error) {
-          console.error('Error populating bubble chart data:', error);
-          // Only show toast for non-404 errors, as 404 is expected if the function doesn't exist yet
-          if (!error.message.includes('404')) {
-            toast.error('Could not populate demo network data');
+        if (tableError) {
+          console.error('Error checking bubble chart tables:', tableError);
+          // Tables might not exist yet
+          toast.warning('Setting up network visualization data...');
+          
+          // Try to call the Edge Function to populate data
+          try {
+            const { data, error } = await supabase.functions.invoke('populate-bubble-charts');
+            
+            if (error) {
+              console.error('Error populating bubble chart data:', error);
+              // Only show toast for non-404 errors, as 404 is expected if the function doesn't exist yet
+              if (!error.message.includes('404')) {
+                toast.error('Could not populate demo network data');
+              }
+            } else if (data) {
+              console.log('Bubble chart data:', data);
+              if (data.success) {
+                toast.success('Network data loaded successfully');
+              }
+            }
+          } catch (err) {
+            console.error('Error invoking populate function:', err);
           }
-        } else if (data) {
-          console.log('Bubble chart data:', data);
-          if (data.success) {
-            toast.success('Network data loaded successfully');
+        } else if (!tableExists || tableExists.length === 0) {
+          // Table exists but is empty
+          toast.warning('Populating network visualization data...');
+          
+          try {
+            const { data, error } = await supabase.functions.invoke('populate-bubble-charts');
+            
+            if (error) {
+              console.error('Error populating bubble chart data:', error);
+              toast.error('Could not populate network data');
+            } else if (data && data.success) {
+              toast.success('Network data loaded successfully');
+            }
+          } catch (err) {
+            console.error('Error invoking populate function:', err);
           }
+        } else {
+          console.log('Bubble chart tables exist and contain data');
         }
       } catch (err) {
-        console.error('Error invoking populate function:', err);
+        console.error('Error checking bubble chart tables:', err);
       }
     };
     
-    populateBubbleChartData();
-  }, []);
-
-  // Enhanced function to handle tab changes without scrolling
-  const handleTabChange = (value: string) => {
-    // Immediately prevent any scrolling
-    window.scrollTo({
-      top: 0,
-      behavior: 'instant'
-    });
-    
-    // Also apply after a short timeout to catch delayed scrolling
-    setTimeout(() => {
-      window.scrollTo({
-        top: 0,
-        behavior: 'instant'
-      });
-    }, 10);
-  };
-  
-  // Add an effect to maintain scroll position
-  useEffect(() => {
-    const maintainScrollPosition = () => {
-      window.scrollTo(0, 0);
-    };
-    
-    // Run on mount
-    maintainScrollPosition();
-    
-    // Return cleanup function
-    return () => {};
+    checkAndPopulateBubbleChartData();
   }, []);
 
   return (
