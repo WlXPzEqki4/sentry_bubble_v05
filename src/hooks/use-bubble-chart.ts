@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -62,19 +63,33 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
         console.log(`Retrieved ${nodesData?.length} nodes and ${edgesData?.length} edges`);
         
         // Transform nodes to format expected by BubbleChartSigma
-        const nodes = nodesData.map(node => ({
-          id: node.id,
-          label: node.title,
-          family: node.properties?.family || node.type,
-          size: node.properties?.size || 5
-        }));
+        const nodes = nodesData.map(node => {
+          // Parse the properties JSON if it's a string
+          const properties = typeof node.properties === 'string' 
+            ? JSON.parse(node.properties) 
+            : node.properties;
+            
+          return {
+            id: node.id,
+            label: node.title,
+            family: properties?.family || node.type,
+            size: properties?.size || 5
+          };
+        });
         
         // Transform edges to format expected by BubbleChartSigma
-        const edges = edgesData.map(edge => ({
-          source: edge.source,
-          target: edge.target,
-          weight: edge.properties?.weight || 1
-        }));
+        const edges = edgesData.map(edge => {
+          // Parse the properties JSON if it's a string
+          const properties = typeof edge.properties === 'string'
+            ? JSON.parse(edge.properties)
+            : edge.properties;
+            
+          return {
+            source: edge.source,
+            target: edge.target,
+            weight: properties?.weight || 1
+          };
+        });
         
         setGraphData({ nodes, edges });
       } catch (error) {
