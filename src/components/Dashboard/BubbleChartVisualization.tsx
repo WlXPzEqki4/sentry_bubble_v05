@@ -114,6 +114,7 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
             ) : (
               <div className="h-full w-full" data-testid="sigma-container">
                 <SigmaContainer
+                  key={`sigma-${selectedNetwork}`}
                   style={{ height: "100%", width: "100%" }}
                   settings={{
                     nodeProgramClasses: {},
@@ -125,7 +126,11 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
                     allowInvalidContainer: true,
                     renderEdgeLabels: true,
                     minCameraRatio: 0.1,
-                    maxCameraRatio: 10
+                    maxCameraRatio: 10,
+                    nodeReducer: (node, data) => {
+                      return { ...data, highlighted: data.highlighted || false };
+                    },
+                    zIndex: true
                   }}
                 >
                   <BubbleChartSigma 

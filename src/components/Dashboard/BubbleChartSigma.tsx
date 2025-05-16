@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
@@ -36,6 +36,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   const registerEvents = useRegisterEvents();
   const [graphInitialized, setGraphInitialized] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState<string>("");
+  const graphRef = useRef<Graph | null>(null);
   
   // Debug logging to verify data
   useEffect(() => {
@@ -44,12 +45,16 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     console.log('Nodes sample:', nodes.slice(0, 2));
   }, [nodes, edges]);
 
+  // Initialize the graph when component mounts or data changes
   useEffect(() => {
     if (!sigma || nodes.length === 0) return;
     
     try {
+      console.log("Initializing Sigma graph...");
+      
       // Create a new graph instance
       const graph = new Graph();
+      graphRef.current = graph;
       
       // Add nodes to the graph
       nodes.forEach(node => {
@@ -63,8 +68,8 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
         const nodeSize = node.data.size ? Math.max(2, Math.min(15, node.data.size * 2)) : 5;
         
         graph.addNode(node.id, {
-          x: node.position ? node.position.x : Math.random(),
-          y: node.position ? node.position.y : Math.random(),
+          x: node.position ? node.position.x / 800 : Math.random(),
+          y: node.position ? node.position.y / 600 : Math.random(),
           size: nodeSize,
           label: node.data.label,
           color: nodeColor,
@@ -94,36 +99,49 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       // Import the graph to sigma
       sigma.setGraph(graph);
       console.log('BubbleChartSigma - Graph set to Sigma');
+      
+      // Mark graph as initialized
       setGraphInitialized(true);
       
-      // Force layout recalculation
+      // Force layout recalculation and refresh
       setTimeout(() => {
+        sigma.getCamera().animatedReset({ duration: 300 });
         sigma.refresh();
-        console.log('BubbleChartSigma - Refreshed Sigma');
+        console.log('BubbleChartSigma - Reset camera and refreshed Sigma');
       }, 100);
       
     } catch (error) {
       console.error('Error setting up Sigma graph:', error);
     }
+  }, [nodes, edges, sigma]);
+
+  // Register node click event
+  useEffect(() => {
+    if (!sigma || !graphInitialized) return;
     
-    // Register node click event
-    registerEvents({
-      clickNode: (event) => {
-        try {
-          const nodeAttributes = sigma.getGraph().getNodeAttributes(event.node);
-          onNodeClick(event.node, nodeAttributes);
-          console.log('Node clicked:', event.node, nodeAttributes);
-        } catch (error) {
-          console.error('Error handling node click:', error);
-        }
+    const clickHandler = (event: { node: string }) => {
+      try {
+        console.log('Node clicked event triggered:', event.node);
+        const nodeAttributes = sigma.getGraph().getNodeAttributes(event.node);
+        console.log('Node attributes:', nodeAttributes);
+        onNodeClick(event.node, nodeAttributes);
+      } catch (error) {
+        console.error('Error handling node click:', error);
       }
+    };
+    
+    // Register the click event handler
+    registerEvents({
+      clickNode: clickHandler
     });
+    
+    console.log('BubbleChartSigma - Registered click handler');
     
     return () => {
       // Cleanup
       registerEvents({});
     };
-  }, [nodes, edges, sigma, registerEvents, onNodeClick]);
+  }, [sigma, registerEvents, onNodeClick, graphInitialized]);
   
   // Handle local search
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
