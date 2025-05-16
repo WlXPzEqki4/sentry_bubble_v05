@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import ForceGraph2D from 'react-force-graph';
+import { ForceGraph2D } from 'react-force-graph';
 
 interface Node {
   id: string;
