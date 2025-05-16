@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import BubbleChartNodeDetails from './BubbleChartNodeDetails';
 import BubbleChartSigma from './BubbleChartSigma';
 import { useBubbleChart } from '@/hooks/use-bubble-chart';
