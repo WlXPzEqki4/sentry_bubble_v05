@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Search, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import Graph from "graphology";
@@ -34,52 +34,86 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
 }) => {
   const sigma = useSigma();
   const registerEvents = useRegisterEvents();
+  const [graphInitialized, setGraphInitialized] = useState(false);
   
+  // Debug logging to verify data
   useEffect(() => {
-    // Create a new graph instance
-    const graph = new Graph();
+    console.log('BubbleChartSigma - Nodes received:', nodes.length);
+    console.log('BubbleChartSigma - Edges received:', edges.length);
+  }, [nodes, edges]);
+
+  useEffect(() => {
+    if (!sigma || nodes.length === 0) return;
     
-    // Add nodes to the graph
-    nodes.forEach(node => {
-      const communityIndex = typeof node.data.community === 'number' 
-        ? node.data.community % COMMUNITY_COLORS.length 
-        : typeof node.data.community === 'string' 
-          ? parseInt(node.data.community, 10) % COMMUNITY_COLORS.length || 0
-          : 0;
+    try {
+      // Create a new graph instance
+      const graph = new Graph();
       
-      const nodeColor = node.data.color || COMMUNITY_COLORS[communityIndex];
-      const nodeSize = node.data.size ? Math.max(2, Math.min(15, node.data.size * 2)) : 5;
-      
-      graph.addNode(node.id, {
-        x: Math.random(),
-        y: Math.random(),
-        size: nodeSize,
-        label: node.data.label,
-        color: nodeColor,
-        description: node.data.description,
-        community: node.data.community,
-        originalData: node.data
-      });
-    });
-    
-    // Add edges to the graph
-    edges.forEach(edge => {
-      if (graph.hasNode(edge.source) && graph.hasNode(edge.target)) {
-        graph.addEdge(edge.source, edge.target, {
-          weight: edge.style?.strokeWidth || 1,
-          size: (edge.style?.strokeWidth || 1) / 2,
+      // Add nodes to the graph
+      nodes.forEach(node => {
+        const communityIndex = typeof node.data.community === 'number' 
+          ? node.data.community % COMMUNITY_COLORS.length 
+          : typeof node.data.community === 'string' 
+            ? parseInt(node.data.community, 10) % COMMUNITY_COLORS.length || 0
+            : 0;
+        
+        const nodeColor = node.data.color || COMMUNITY_COLORS[communityIndex];
+        const nodeSize = node.data.size ? Math.max(2, Math.min(15, node.data.size * 2)) : 5;
+        
+        graph.addNode(node.id, {
+          x: node.position ? node.position.x : Math.random(),
+          y: node.position ? node.position.y : Math.random(),
+          size: nodeSize,
+          label: node.data.label,
+          color: nodeColor,
+          description: node.data.description,
+          community: node.data.community,
+          originalData: node.data
         });
-      }
-    });
-    
-    // Import the graph to sigma
-    sigma.setGraph(graph);
+      });
+      
+      console.log('BubbleChartSigma - Added nodes to graph');
+      
+      // Add edges to the graph
+      edges.forEach(edge => {
+        if (graph.hasNode(edge.source) && graph.hasNode(edge.target)) {
+          graph.addEdge(edge.source, edge.target, {
+            weight: edge.style?.strokeWidth || 1,
+            size: (edge.style?.strokeWidth || 1) / 2,
+            color: "#ccc"
+          });
+        } else {
+          console.warn(`Cannot add edge from ${edge.source} to ${edge.target} because one or both nodes don't exist`);
+        }
+      });
+      
+      console.log('BubbleChartSigma - Added edges to graph');
+      
+      // Import the graph to sigma
+      sigma.setGraph(graph);
+      console.log('BubbleChartSigma - Graph set to Sigma');
+      setGraphInitialized(true);
+      
+      // Force layout recalculation
+      setTimeout(() => {
+        sigma.refresh();
+        console.log('BubbleChartSigma - Refreshed Sigma');
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error setting up Sigma graph:', error);
+    }
     
     // Register node click event
     registerEvents({
       clickNode: (event) => {
-        const nodeAttributes = sigma.getGraph().getNodeAttributes(event.node);
-        onNodeClick(event.node, nodeAttributes);
+        try {
+          const nodeAttributes = sigma.getGraph().getNodeAttributes(event.node);
+          onNodeClick(event.node, nodeAttributes);
+          console.log('Node clicked:', event.node, nodeAttributes);
+        } catch (error) {
+          console.error('Error handling node click:', error);
+        }
       }
     });
     
@@ -91,25 +125,31 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   
   // Filter nodes based on search term
   useEffect(() => {
-    if (!searchTerm) {
-      // If no search term, show all nodes
-      sigma.getGraph().forEachNode((node) => {
-        sigma.getGraph().setNodeAttribute(node, "hidden", false);
-      });
-      return;
-    }
+    if (!sigma || !graphInitialized) return;
     
-    // Otherwise, hide nodes that don't match the search term
-    sigma.getGraph().forEachNode((node) => {
-      const attributes = sigma.getGraph().getNodeAttributes(node);
-      const matchesSearch = attributes.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          attributes.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      sigma.getGraph().setNodeAttribute(node, "hidden", !matchesSearch);
-    });
-  }, [searchTerm, sigma]);
+    try {
+      if (!searchTerm) {
+        // If no search term, show all nodes
+        sigma.getGraph().forEachNode((node) => {
+          sigma.getGraph().setNodeAttribute(node, "hidden", false);
+        });
+        return;
+      }
+      
+      // Otherwise, hide nodes that don't match the search term
+      sigma.getGraph().forEachNode((node) => {
+        const attributes = sigma.getGraph().getNodeAttributes(node);
+        const matchesSearch = attributes.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            attributes.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        sigma.getGraph().setNodeAttribute(node, "hidden", !matchesSearch);
+      });
+    } catch (error) {
+      console.error('Error filtering nodes:', error);
+    }
+  }, [searchTerm, sigma, graphInitialized]);
   
   return (
-    <>
+    <div className="absolute inset-0 z-0">
       <div className="absolute top-4 left-4 z-10">
         <div className="flex items-center bg-white p-2 rounded-md shadow-sm">
           <Search className="h-4 w-4 text-gray-500 mr-2" />
@@ -122,7 +162,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
         </div>
       </div>
       <ForceAtlasControl />
-    </>
+    </div>
   );
 };
 

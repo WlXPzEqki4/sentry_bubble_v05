@@ -8,8 +8,6 @@ import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } fro
 import BubbleChartSigma from './BubbleChartSigma';
 import { ForceAtlasControl } from './ForceAtlasControl';
 
-// CSS is included in the component with inline styles
-
 interface BubbleChartVisualizationProps {
   selectedNetwork: string;
   userClassificationLevel: string;
@@ -24,6 +22,12 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { nodes, edges, isLoading, error } = useBubbleChart(selectedNetwork, userClassificationLevel);
+
+  useEffect(() => {
+    console.log("BubbleChartVisualization - Selected Network:", selectedNetwork);
+    console.log("BubbleChartVisualization - Nodes:", nodes.length);
+    console.log("BubbleChartVisualization - Edges:", edges.length);
+  }, [selectedNetwork, nodes, edges]);
 
   const handleNodeClick = useCallback((nodeId: string, attributes: any) => {
     console.log("Node clicked:", nodeId, attributes);
@@ -106,30 +110,32 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
                 <p className="text-gray-500">No data available for this network.</p>
               </div>
             ) : (
-              <SigmaContainer
-                style={{ height: "100%", width: "100%" }}
-                settings={{
-                  nodeProgramClasses: {},
-                  defaultNodeColor: "#6366F1",
-                  defaultEdgeColor: "#e0e0e0",
-                  labelDensity: 0.07,
-                  labelGridCellSize: 60,
-                  labelRenderedSizeThreshold: 6,
-                  allowInvalidContainer: true
-                }}
-              >
-                <BubbleChartSigma 
-                  nodes={nodes}
-                  edges={edges}
-                  searchTerm={searchTerm}
-                  onNodeClick={handleNodeClick}
-                />
-                <ControlsContainer position={"bottom-right"}>
-                  <ZoomControl />
-                  <FullScreenControl />
-                </ControlsContainer>
-                <ForceAtlasControl />
-              </SigmaContainer>
+              <div className="h-full w-full" data-testid="sigma-container">
+                <SigmaContainer
+                  style={{ height: "100%", width: "100%" }}
+                  settings={{
+                    nodeProgramClasses: {},
+                    defaultNodeColor: "#6366F1",
+                    defaultEdgeColor: "#e0e0e0",
+                    labelDensity: 0.07,
+                    labelGridCellSize: 60,
+                    labelRenderedSizeThreshold: 6,
+                    allowInvalidContainer: true
+                  }}
+                >
+                  <BubbleChartSigma 
+                    nodes={nodes}
+                    edges={edges}
+                    searchTerm={searchTerm}
+                    onNodeClick={handleNodeClick}
+                  />
+                  <ControlsContainer position={"bottom-right"}>
+                    <ZoomControl />
+                    <FullScreenControl />
+                  </ControlsContainer>
+                  <ForceAtlasControl />
+                </SigmaContainer>
+              </div>
             )}
           </div>
           

@@ -1,45 +1,52 @@
 
-import React, { useEffect, useState } from "react";
-import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
-import { Button } from "@/components/ui/button";
-import { useSigma } from "@react-sigma/core";
+import React, { useState, useEffect } from "react";
+import { useSetSettings, useRegisterEvents, useSigma } from "@react-sigma/core";
+import { FA2Layout } from "@react-sigma/layout-forceatlas2";
 
 export const ForceAtlasControl = () => {
+  const [running, setRunning] = useState(false);
   const sigma = useSigma();
-  const { start, stop, isRunning, kill } = useWorkerLayoutForceAtlas2({
-    settings: {
-      barnesHutOptimize: true,
-      slowDown: 10,
-      strongGravityMode: true,
-      gravity: 1,
-      scalingRatio: 10,
-      linLogMode: false,
-    },
-  });
+  const setSettings = useSetSettings();
+  const registerEvents = useRegisterEvents();
 
-  // Auto-start the layout on mount and stop after a short time
   useEffect(() => {
-    start();
+    // Auto-start layout after a short delay
     const timer = setTimeout(() => {
-      stop();
-    }, 3000);
-    return () => {
-      clearTimeout(timer);
-      kill();
-    };
-  }, [start, stop, kill]);
+      setRunning(true);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Register the stopForceAtlas2 event
+    registerEvents({
+      // This event is triggered when sigma's container is double-clicked
+      doubleClickStage: () => {
+        setRunning(false);
+      },
+    });
+  }, [registerEvents]);
 
   return (
-    <div className="absolute bottom-4 left-4 z-10">
-      <div className="bg-white p-2 rounded-md shadow-sm">
-        <Button 
-          onClick={isRunning ? stop : start}
-          variant={isRunning ? "destructive" : "default"}
-          size="sm"
-        >
-          {isRunning ? "Stop Layout" : "Apply Layout"}
-        </Button>
-      </div>
+    <div>
+      <FA2Layout
+        settings={{
+          slowDown: 10,
+          strongGravityMode: true,
+          gravity: 1,
+          barnesHutOptimize: true,
+          barnesHutTheta: 0.5,
+        }}
+        iterations={running ? 100 : 0}
+      />
+      <button
+        className="absolute top-4 right-4 z-10 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow"
+        onClick={() => setRunning(!running)}
+        title={running ? "Stop layout" : "Start layout"}
+      >
+        {running ? "Stop Layout" : "Start Layout"}
+      </button>
     </div>
   );
 };
