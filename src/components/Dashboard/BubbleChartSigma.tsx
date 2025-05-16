@@ -3,7 +3,6 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import Graph from "graphology";
-import { ForceAtlasControl } from './ForceAtlasControl';
 
 interface BubbleChartSigmaProps {
   nodes: any[];
@@ -161,7 +160,6 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
           />
         </div>
       </div>
-      <ForceAtlasControl />
     </div>
   );
 };

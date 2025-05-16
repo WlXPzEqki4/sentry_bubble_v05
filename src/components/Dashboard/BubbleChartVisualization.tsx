@@ -6,7 +6,6 @@ import BubbleChartNodeDetails from './BubbleChartNodeDetails';
 import { useBubbleChart } from '@/hooks/use-bubble-chart';
 import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } from "@react-sigma/core";
 import BubbleChartSigma from './BubbleChartSigma';
-import { ForceAtlasControl } from './ForceAtlasControl';
 
 interface BubbleChartVisualizationProps {
   selectedNetwork: string;
@@ -133,7 +132,6 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
                     <ZoomControl />
                     <FullScreenControl />
                   </ControlsContainer>
-                  <ForceAtlasControl />
                 </SigmaContainer>
               </div>
             )}
