@@ -78,7 +78,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       }
     });
     
-    // Initialize sigma - Fix for TS2353 error - removed unsupported properties
+    // Initialize sigma with fixed settings
     const sigma = new Sigma(graph, containerRef.current, {
       defaultNodeColor: "#9b87f5",
       defaultEdgeColor: "#eee",
@@ -89,9 +89,10 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     sigmaRef.current = sigma;
     
-    // Add event listeners
+    // Add click event listeners
     sigma.on("clickNode", (event) => {
-      if (!isDragging) {
+      // Only register clicks when not dragging
+      if (!isDragging && !draggedNode) {
         const nodeId = event.node;
         const nodeAttributes = graph.getNodeAttributes(nodeId);
         onNodeClick({ 
@@ -113,21 +114,25 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       sigma.refresh();
     });
     
-    // Improved mousedown event - detect if we're clicking on a node
-    sigma.getMouseCaptor().on("mousedown", (e) => {
+    // Node drag detection and handling
+    const mousedownHandler = (e: any) => {
+      if (isDragging) return; // Prevent new drag while already dragging
+      
       // Get the camera for coordinate transformations
       const camera = sigma.getCamera();
       
-      // Find the closest node to mouse position
+      // Mouse position in viewport coordinates
       const mouseX = e.x;
       const mouseY = e.y;
       
       let closestNode: string | null = null;
       let minDistance = Infinity;
       
+      // Check each node to see if mouse is over it
       graph.forEachNode((nodeId) => {
         const attrs = graph.getNodeAttributes(nodeId);
-        // Convert node position from graph to screen coordinates
+        
+        // Convert node position from graph to viewport coordinates
         const nodePosition = sigma.graphToViewport(attrs.x, attrs.y);
         
         // Calculate distance from mouse to node center
@@ -146,60 +151,64 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       });
       
       if (closestNode) {
-        setIsDragging(true);
+        // We found a node to drag
         setDraggedNode(closestNode);
+        setIsDragging(true);
         
-        // Prevent the camera from moving while dragging
+        // Prevent camera movement during drag
         e.preventSigmaDefault();
         e.original.preventDefault();
         e.original.stopPropagation();
-      }
-    });
-
-    sigma.getMouseCaptor().on("mousemove", (e) => {
-      if (isDragging && draggedNode && handleNodeDrag) {
-        const camera = sigma.getCamera();
-        
-        // Convert viewport coordinates to graph coordinates
-        // We need to manually convert since viewportToGraph doesn't exist on camera
-        const viewportX = e.x;
-        const viewportY = e.y;
-        
-        // Get current camera state
-        const cameraState = camera.getState();
-        
-        // Convert viewport coordinates to graph coordinates using camera state
-        const graphX = (viewportX - cameraState.x) / cameraState.ratio;
-        const graphY = (viewportY - cameraState.y) / cameraState.ratio;
-        
-        // Update node position in graph
-        graph.setNodeAttribute(draggedNode, "x", graphX);
-        graph.setNodeAttribute(draggedNode, "y", graphY);
-        
-        // Call the handler to update the physics simulation
-        handleNodeDrag(draggedNode, graphX, graphY);
-        
-        // Prevent the camera from moving while dragging
-        e.preventSigmaDefault();
-        e.original.preventDefault();
-        e.original.stopPropagation();
-        
-        // Refresh rendering
-        sigma.refresh();
-      }
-    });
-
-    // Handle both mouseup and mouseleave for better dragging experience
-    const endDrag = () => {
-      if (isDragging && draggedNode && handleNodeDragEnd) {
-        handleNodeDragEnd(draggedNode);
-        setIsDragging(false);
-        setDraggedNode(null);
       }
     };
 
-    sigma.getMouseCaptor().on("mouseup", endDrag);
-    sigma.getMouseCaptor().on("mouseleave", endDrag);
+    const mousemoveHandler = (e: any) => {
+      if (!isDragging || !draggedNode || !handleNodeDrag) return;
+      
+      const camera = sigma.getCamera();
+      
+      // Get current camera state for manual conversion
+      const cameraState = camera.getState();
+      
+      // Convert viewport coordinates to graph coordinates
+      const viewportX = e.x;
+      const viewportY = e.y;
+      
+      // Manual conversion from viewport to graph coordinates
+      const graphX = (viewportX - cameraState.x) / cameraState.ratio;
+      const graphY = (viewportY - cameraState.y) / cameraState.ratio;
+      
+      // Update node position in graph
+      graph.setNodeAttribute(draggedNode, "x", graphX);
+      graph.setNodeAttribute(draggedNode, "y", graphY);
+      
+      // Call the external handler
+      handleNodeDrag(draggedNode, graphX, graphY);
+      
+      // Prevent camera movement during drag
+      e.preventSigmaDefault();
+      e.original.preventDefault();
+      e.original.stopPropagation();
+      
+      sigma.refresh();
+    };
+
+    const endDragHandler = () => {
+      if (isDragging && draggedNode && handleNodeDragEnd) {
+        handleNodeDragEnd(draggedNode);
+      }
+      
+      // Reset drag state
+      setIsDragging(false);
+      setDraggedNode(null);
+    };
+
+    // Attach event handlers
+    const mouseCaptor = sigma.getMouseCaptor();
+    mouseCaptor.on("mousedown", mousedownHandler);
+    mouseCaptor.on("mousemove", mousemoveHandler);
+    mouseCaptor.on("mouseup", endDragHandler);
+    mouseCaptor.on("mouseleave", endDragHandler);
     
     // Position camera
     sigma.getCamera().animate({
@@ -210,10 +219,17 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     // Cleanup
     return () => {
+      // Remove event handlers before killing sigma
+      mouseCaptor.off("mousedown", mousedownHandler);
+      mouseCaptor.off("mousemove", mousemoveHandler);
+      mouseCaptor.off("mouseup", endDragHandler);
+      mouseCaptor.off("mouseleave", endDragHandler);
+      
+      // Kill sigma instance
       sigma.kill();
       sigmaRef.current = null;
     };
-  }, [graphData, onNodeClick, handleNodeDrag, handleNodeDragEnd, isDragging]);
+  }, [graphData, onNodeClick, handleNodeDrag, handleNodeDragEnd]);
 
   // Filter nodes based on search term
   useEffect(() => {
@@ -305,7 +321,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
         </Button>
       </div>
 
-      {isDragging && (
+      {isDragging && draggedNode && (
         <div className="absolute bottom-4 right-4 z-10 bg-white p-2 rounded-md shadow-sm text-sm text-gray-500">
           Dragging node: {draggedNode}
         </div>
