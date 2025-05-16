@@ -16,7 +16,6 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
   selectedNetwork,
   userClassificationLevel
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -24,57 +23,21 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
 
   useEffect(() => {
     console.log("BubbleChartVisualization - Selected Network:", selectedNetwork);
-    console.log("BubbleChartVisualization - Nodes:", nodes.length);
-    console.log("BubbleChartVisualization - Edges:", edges.length);
+    console.log("BubbleChartVisualization - Nodes count:", nodes.length);
+    console.log("BubbleChartVisualization - Edges count:", edges.length);
   }, [selectedNetwork, nodes, edges]);
 
   const handleNodeClick = useCallback((nodeId: string, attributes: any) => {
     console.log("Node clicked:", nodeId, attributes);
     setSelectedNode({
       id: nodeId,
-      data: attributes
+      data: attributes.originalData || attributes
     });
   }, []);
 
   const resetSelectedNode = () => {
     setSelectedNode(null);
   };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const resetSearch = () => {
-    setSearchTerm('');
-  };
-
-  // Add global CSS for Sigma.js
-  useEffect(() => {
-    // Create a style element for Sigma CSS
-    const style = document.createElement('style');
-    style.textContent = `
-      .sigma-mouse {
-        cursor: crosshair;
-      }
-      .sigma-mouse.dragging {
-        cursor: move;
-      }
-      .sigma-mouse.selecting {
-        cursor: crosshair;
-      }
-      .sigma-labels > .sigma-label {
-        font-family: sans-serif;
-      }
-      .sigma-hovers, .sigma-tooltips {
-        pointer-events: none;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
 
   if (error) {
     return (
@@ -112,12 +75,11 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
                 <p className="text-gray-500">No data available for this network.</p>
               </div>
             ) : (
-              <div className="h-full w-full" data-testid="sigma-container">
+              <div className="h-full w-full relative" data-testid="sigma-container">
                 <SigmaContainer
-                  key={`sigma-${selectedNetwork}`}
+                  key={`sigma-container-${selectedNetwork}`}
                   style={{ height: "100%", width: "100%" }}
                   settings={{
-                    nodeProgramClasses: {},
                     defaultNodeColor: "#6366F1",
                     defaultEdgeColor: "#e0e0e0",
                     labelDensity: 0.07,
@@ -127,19 +89,16 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
                     renderEdgeLabels: true,
                     minCameraRatio: 0.1,
                     maxCameraRatio: 10,
-                    nodeReducer: (node, data) => {
-                      return { ...data, highlighted: data.highlighted || false };
-                    },
                     zIndex: true
                   }}
                 >
                   <BubbleChartSigma 
+                    key={`sigma-chart-${selectedNetwork}`}
                     nodes={nodes}
                     edges={edges}
-                    searchTerm={searchTerm}
                     onNodeClick={handleNodeClick}
                   />
-                  <ControlsContainer position={"bottom-right"}>
+                  <ControlsContainer position="bottom-right">
                     <ZoomControl />
                     <FullScreenControl />
                   </ControlsContainer>
