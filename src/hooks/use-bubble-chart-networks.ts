@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface NetworkOption {
   id: string;
@@ -21,12 +20,14 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
       setError(null);
 
       try {
-        // In a real implementation, we would filter by classification level
-        // For now, creating a mock response with sample networks
-        // This would be replaced with a real Supabase query when the table is created
-        
-        // Simulating a Supabase response for development until the table exists
+        // Mock network data with Romeo and Juliet network added
         const mockNetworks: NetworkOption[] = [
+          {
+            id: 'romeo-and-juliet-network',
+            name: 'Romeo and Juliet Character Network',
+            description: 'Character relationships from Shakespeare\'s Romeo and Juliet',
+            classification_level: 'unclassified',
+          },
           {
             id: 'terrorist-network',
             name: 'Terrorist Network Analysis',

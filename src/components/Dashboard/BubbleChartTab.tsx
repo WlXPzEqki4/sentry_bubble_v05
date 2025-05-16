@@ -1,9 +1,9 @@
 
-import React, { useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from 'react';
 import BubbleChartNetworkSelector from './BubbleChartNetworkSelector';
 import BubbleChartVisualization from './BubbleChartVisualization';
 import { useBubbleChartNetworks } from '@/hooks/use-bubble-chart-networks';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface BubbleChartTabProps {
   userClassificationLevel?: string;
@@ -17,36 +17,6 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
     isLoading: networksLoading,
     error: networksError
   } = useBubbleChartNetworks(userClassificationLevel);
-
-  // Enhanced function to handle tab changes without scrolling
-  const handleTabChange = (value: string) => {
-    // Immediately prevent any scrolling
-    window.scrollTo({
-      top: 0,
-      behavior: 'instant'
-    });
-    
-    // Also apply after a short timeout to catch delayed scrolling
-    setTimeout(() => {
-      window.scrollTo({
-        top: 0,
-        behavior: 'instant'
-      });
-    }, 10);
-  };
-  
-  // Add an effect to maintain scroll position
-  useEffect(() => {
-    const maintainScrollPosition = () => {
-      window.scrollTo(0, 0);
-    };
-    
-    // Run on mount
-    maintainScrollPosition();
-    
-    // Return cleanup function
-    return () => {};
-  }, []);
 
   return (
     <div className="space-y-4">
@@ -65,6 +35,17 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
           isLoading={networksLoading}
         />
       </div>
+
+      <Alert variant="default" className="bg-gray-50 border-gray-200">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+          <AlertTitle>Demo Visualization</AlertTitle>
+        </div>
+        <AlertDescription>
+          This visualization is using demo network data based on your selection. Node size represents importance, 
+          colors represent family/group affiliations, and edge thickness represents relationship strength.
+        </AlertDescription>
+      </Alert>
 
       {networksError ? (
         <div className="p-8 text-center">
