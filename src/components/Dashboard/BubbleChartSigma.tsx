@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Sigma } from "sigma";
 import Graph from "graphology";
-import { Search, X } from 'lucide-react';
+import { Search, X, Move } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Panel } from '@/components/ui/panel';
@@ -29,6 +29,9 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   const sigmaRef = useRef<Sigma | null>(null);
   const graphRef = useRef<Graph | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedNode, setDraggedNode] = useState<string | null>(null);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
   
   // Initialize the graph when component mounts or data changes
   useEffect(() => {
@@ -63,54 +66,194 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       );
     });
     
-    // Initialize sigma - Fix for TS2353 error - removed unsupported properties
+    // Initialize sigma
     const sigma = new Sigma(graph, containerRef.current, {
       defaultNodeColor: "#9b87f5",
       defaultEdgeColor: "#eee",
       labelColor: { attribute: "color" },
       labelSize: 14,
-      // labelThreshold property removed as it's not part of the Sigma Settings type
       renderEdgeLabels: false
     });
     
     sigmaRef.current = sigma;
     
-    // Add event listeners
-    sigma.on("clickNode", (event) => {
-      const nodeId = event.node;
-      const nodeAttributes = graph.getNodeAttributes(nodeId);
-      onNodeClick({ 
-        id: nodeId, 
-        data: nodeAttributes 
-      });
-    });
-
-    sigma.on("enterNode", (event) => {
-      setHoveredNode(event.node);
-      graph.setNodeAttribute(event.node, "hovered", true);
-      sigma.refresh();
-    });
-
-    sigma.on("leaveNode", (event) => {
-      setHoveredNode(null);
-      graph.setNodeAttribute(event.node, "hovered", false);
-      sigma.refresh();
-    });
-    
-    // Position camera - Fix for TS2353 error - removed duration property
+    // Position camera
     sigma.getCamera().animate({
       x: 0.5,
       y: 0.5,
       ratio: 1.2
-      // duration property removed as it's not part of the CameraState type
     });
     
     // Cleanup
     return () => {
-      sigma.kill();
-      sigmaRef.current = null;
+      if (sigma) {
+        sigma.kill();
+        sigmaRef.current = null;
+      }
     };
-  }, [graphData, onNodeClick]);
+  }, [graphData]);
+
+  // Set up event handlers for node interaction
+  useEffect(() => {
+    const sigma = sigmaRef.current;
+    const graph = graphRef.current;
+    
+    if (!sigma || !graph) return;
+
+    // Helper function to get node under the mouse pointer
+    const getNodeAtPosition = (x: number, y: number) => {
+      const camera = sigma.getCamera();
+      const mousePosition = sigma.viewportToGraph({ x, y });
+      
+      // Find node under pointer
+      const nodeIds = graph.nodes();
+      for (let i = 0; i < nodeIds.length; i++) {
+        const nodeId = nodeIds[i];
+        const nodeAttributes = graph.getNodeAttributes(nodeId);
+        const nodePosition = { x: nodeAttributes.x, y: nodeAttributes.y };
+        const nodeSize = nodeAttributes.size;
+        
+        // Calculate distance between mouse and node center
+        const distance = Math.sqrt(
+          Math.pow(mousePosition.x - nodePosition.x, 2) + 
+          Math.pow(mousePosition.y - nodePosition.y, 2)
+        );
+        
+        // Check if mouse is inside node (adjust for zoom level)
+        if (distance < (nodeSize / camera.ratio) * 0.03) {
+          return nodeId;
+        }
+      }
+      return null;
+    };
+
+    // Hover effects for nodes
+    const handleNodeEnter = (event: any) => {
+      const nodeId = event.node;
+      setHoveredNode(nodeId);
+      graph.setNodeAttribute(nodeId, "hovered", true);
+      sigma.refresh();
+      // Change cursor to grab to indicate draggable
+      if (containerRef.current) {
+        containerRef.current.style.cursor = 'grab';
+      }
+    };
+
+    const handleNodeLeave = (event: any) => {
+      const nodeId = event.node;
+      setHoveredNode(null);
+      graph.setNodeAttribute(nodeId, "hovered", false);
+      sigma.refresh();
+      // Reset cursor unless dragging
+      if (containerRef.current && !isDragging) {
+        containerRef.current.style.cursor = 'default';
+      }
+    };
+
+    // Mouse down event for node dragging
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!sigma || !graph) return;
+
+      const mouseX = event.offsetX;
+      const mouseY = event.offsetY;
+      const nodeId = getNodeAtPosition(mouseX, mouseY);
+      
+      if (nodeId) {
+        // Prevent standard click behavior when dragging starts
+        event.preventDefault();
+        // Start dragging the node
+        setIsDragging(true);
+        setDraggedNode(nodeId);
+        dragStartPosRef.current = { x: mouseX, y: mouseY };
+        
+        // Change cursor to grabbing to indicate active drag
+        if (containerRef.current) {
+          containerRef.current.style.cursor = 'grabbing';
+        }
+      }
+    };
+
+    // Mouse move event for dragging
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!isDragging || !draggedNode || !sigma || !graph) return;
+      
+      const camera = sigma.getCamera();
+      const mousePosition = sigma.viewportToGraph({ x: event.offsetX, y: event.offsetY });
+      
+      // Update node position in graph
+      graph.setNodeAttribute(draggedNode, "x", mousePosition.x);
+      graph.setNodeAttribute(draggedNode, "y", mousePosition.y);
+      
+      // Refresh to show new position
+      sigma.refresh();
+    };
+
+    // Mouse up event to end dragging
+    const handleMouseUp = () => {
+      if (isDragging && draggedNode) {
+        setIsDragging(false);
+        setDraggedNode(null);
+        
+        // Reset cursor
+        if (containerRef.current) {
+          containerRef.current.style.cursor = hoveredNode ? 'grab' : 'default';
+        }
+      }
+    };
+
+    // Handle mouse leave from container
+    const handleMouseLeave = () => {
+      if (isDragging && draggedNode) {
+        setIsDragging(false);
+        setDraggedNode(null);
+        
+        if (containerRef.current) {
+          containerRef.current.style.cursor = 'default';
+        }
+      }
+    };
+
+    // Handle click on node (only trigger if not dragging)
+    const handleNodeClick = (event: any) => {
+      if (!isDragging) {
+        const nodeId = event.node;
+        const nodeAttributes = graph.getNodeAttributes(nodeId);
+        onNodeClick({ 
+          id: nodeId, 
+          data: nodeAttributes 
+        });
+      }
+    };
+
+    // Add event listeners
+    sigma.on("enterNode", handleNodeEnter);
+    sigma.on("leaveNode", handleNodeLeave);
+    sigma.on("clickNode", handleNodeClick);
+    
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('mousedown', handleMouseDown);
+      container.addEventListener('mousemove', handleMouseMove);
+      container.addEventListener('mouseup', handleMouseUp);
+      container.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    // Cleanup event listeners
+    return () => {
+      if (sigma) {
+        sigma.removeListener("enterNode", handleNodeEnter);
+        sigma.removeListener("leaveNode", handleNodeLeave);
+        sigma.removeListener("clickNode", handleNodeClick);
+      }
+      
+      if (container) {
+        container.removeEventListener('mousedown', handleMouseDown);
+        container.removeEventListener('mousemove', handleMouseMove);
+        container.removeEventListener('mouseup', handleMouseUp);
+        container.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, [isDragging, draggedNode, hoveredNode, onNodeClick]);
 
   // Filter nodes based on search term
   useEffect(() => {
@@ -176,6 +319,11 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
             </button>
           )}
         </div>
+      </div>
+
+      <div className="absolute bottom-4 right-4 z-10 bg-white p-2 rounded-md shadow-sm flex items-center">
+        <Move className="h-4 w-4 text-gray-500 mr-2" />
+        <span className="text-xs text-gray-500">Click and drag nodes to reposition</span>
       </div>
     </div>
   );
