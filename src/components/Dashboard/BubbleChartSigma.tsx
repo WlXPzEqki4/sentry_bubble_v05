@@ -67,7 +67,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     const sigma = new Sigma(graph, containerRef.current, {
       defaultNodeColor: "#9b87f5",
       defaultEdgeColor: "#eee",
-      labelColor: "node",
+      labelColor: { attribute: "color" }, // Fix for TS2322 error - using object format instead of string
       labelSize: 14,
       labelThreshold: 7,
       renderEdgeLabels: false
@@ -97,12 +97,12 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       sigma.refresh();
     });
     
-    // Position camera
+    // Position camera - Fix for TS2353 error - removed duration property
     sigma.getCamera().animate({
       x: 0.5,
       y: 0.5,
-      ratio: 1.2,
-      duration: 300
+      ratio: 1.2
+      // duration property removed as it's not part of the CameraState type
     });
     
     // Cleanup
