@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { SigmaContainer, useSigma, useLoadGraph } from "react-sigma";
+import { Sigma } from "react-sigma";
 import Graph from "graphology";
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -17,26 +17,29 @@ interface BubbleChartSigmaProps {
   isLoading: boolean;
 }
 
-// Sigma component that initializes the graph
-const SigmaGraph = ({ 
-  graphData, 
-  searchTerm, 
-  onNodeClick 
-}: { 
-  graphData: any;
-  searchTerm: string;
-  onNodeClick: (node: any) => void;
+const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
+  graphData,
+  searchTerm,
+  onSearchChange,
+  resetSearch,
+  onNodeClick,
+  isLoading
 }) => {
-  const sigma = useSigma();
-  const loadGraph = useLoadGraph();
+  const sigmaRef = useRef<any>(null);
+  const graphRef = useRef<any>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const graphInitialized = useRef(false);
+  
+  // Generate a key for re-rendering Sigma when data changes
+  const key = `sigma-${graphData ? JSON.stringify(graphData).length : '0'}-${Date.now()}`;
 
-  useEffect(() => {
-    if (!graphData || graphInitialized.current) return;
+  // Initialize the graph when component mounts or data changes
+  const initializeGraph = () => {
+    if (!graphData || !graphData.nodes || !sigmaRef.current) return;
     
+    // Create a new graph instance
     const graph = new Graph();
-
+    graphRef.current = graph;
+    
     // Add nodes to graph
     graphData.nodes.forEach((node: any) => {
       graph.addNode(node.id.toString(), {
@@ -61,79 +64,72 @@ const SigmaGraph = ({
         }
       );
     });
-
-    loadGraph(graph);
-    graphInitialized.current = true;
     
-    // Set camera to fit the graph
-    sigma.getCamera().animate({ 
-      x: 0.5, 
-      y: 0.5, 
-      ratio: 1.2,
-      duration: 500
-    });
-
-    // Event listeners
-    sigma.on("clickNode", (event) => {
-      const nodeId = event.node;
-      const nodeAttributes = graph.getNodeAttributes(nodeId);
+    // Get the sigma instance and set the graph
+    const sigma = sigmaRef.current.getSigmaInstance();
+    
+    // Set the graph
+    sigma.graph.clear();
+    sigma.graph.read(graph.export());
+    sigma.refresh();
+    
+    // Add event listeners
+    sigma.bind('clickNode', (event: any) => {
+      const nodeId = event.data.node;
+      const nodeAttributes = sigma.graph.getNodeAttributes(nodeId);
       onNodeClick({ 
         id: nodeId, 
         data: nodeAttributes 
       });
     });
-
-    sigma.on("enterNode", (event) => {
-      setHoveredNode(event.node);
-      sigma.getGraph().setNodeAttribute(event.node, "hovered", true);
-      sigma.refresh();
+    
+    // Position camera
+    sigma.camera.goTo({
+      x: 0.5,
+      y: 0.5,
+      ratio: 1.2
     });
+  };
 
-    sigma.on("leaveNode", (event) => {
-      setHoveredNode(null);
-      sigma.getGraph().setNodeAttribute(event.node, "hovered", false);
-      sigma.refresh();
-    });
-
-    return () => {
-      sigma.removeAllListeners();
-    };
-  }, [graphData, loadGraph, onNodeClick, sigma]);
+  // Effect for initializing the graph
+  useEffect(() => {
+    if (sigmaRef.current) {
+      initializeGraph();
+    }
+  }, [graphData, sigmaRef.current]);
 
   // Filter nodes based on search term
   useEffect(() => {
-    if (!sigma || !searchTerm) {
-      sigma.getGraph().forEachNode((node) => {
-        sigma.getGraph().setNodeAttribute(node, "hidden", false);
-      });
-      sigma.refresh();
-      return;
-    }
-
+    if (!sigmaRef.current || !searchTerm) return;
+    
+    const sigma = sigmaRef.current.getSigmaInstance();
     const searchLower = searchTerm.toLowerCase();
-    sigma.getGraph().forEachNode((node) => {
-      const attributes = sigma.getGraph().getNodeAttributes(node);
-      const label = attributes.label.toLowerCase();
+    
+    sigma.graph.nodes().forEach((nodeId: string) => {
+      const attributes = sigma.graph.getNodeAttributes(nodeId);
+      const label = attributes.label ? attributes.label.toLowerCase() : '';
       const matches = label.includes(searchLower);
       
-      sigma.getGraph().setNodeAttribute(node, "hidden", !matches);
+      if (!matches) {
+        sigma.graph.setNodeAttribute(nodeId, 'hidden', true);
+      } else {
+        sigma.graph.setNodeAttribute(nodeId, 'hidden', false);
+      }
     });
     
     sigma.refresh();
-  }, [searchTerm, sigma]);
-
-  return null;
-};
-
-const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
-  graphData,
-  searchTerm,
-  onSearchChange,
-  resetSearch,
-  onNodeClick,
-  isLoading
-}) => {
-  const key = `sigma-${graphData ? JSON.stringify(graphData).length : '0'}-${Date.now()}`;
+    
+    // Reset when search is cleared
+    return () => {
+      if (sigmaRef.current) {
+        const sigma = sigmaRef.current.getSigmaInstance();
+        sigma.graph.nodes().forEach((nodeId: string) => {
+          sigma.graph.setNodeAttribute(nodeId, 'hidden', false);
+        });
+        sigma.refresh();
+      }
+    };
+  }, [searchTerm]);
 
   if (isLoading) {
     return (
@@ -153,44 +149,37 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
 
   return (
     <div style={{ height: "100%", width: "100%", position: "relative" }}>
-      <SigmaContainer 
+      <Sigma 
+        ref={sigmaRef}
         key={key}
         style={{ height: "100%", width: "100%" }}
         settings={{
-          nodeProgramClasses: {},
           defaultNodeColor: "#9b87f5",
           defaultEdgeColor: "#eee",
-          labelColor: { color: "#333" },
+          labelColor: "node",
           labelSize: 14,
-          labelWeight: "bold",
-          renderLabels: true,
-          labelGridCellSize: 100,
-          labelDensity: 1,
-          labelRenderedSizeThreshold: 10,
+          labelThreshold: 7,
+          drawEdges: true,
+          minEdgeSize: 1,
+          maxEdgeSize: 3
         }}
-      >
-        <SigmaGraph 
-          graphData={graphData} 
-          searchTerm={searchTerm}
-          onNodeClick={onNodeClick} 
-        />
-        <Panel position="top-left">
-          <div className="flex items-center bg-white p-2 rounded-md shadow-sm">
-            <Search className="h-4 w-4 text-gray-500 mr-2" />
-            <Input
-              placeholder="Search nodes..."
-              value={searchTerm}
-              onChange={onSearchChange}
-              className="h-8 w-[200px] border-none focus-visible:ring-0"
-            />
-            {searchTerm && (
-              <button className="h-8 w-8 p-0 ml-1" onClick={resetSearch}>
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </Panel>
-      </SigmaContainer>
+      />
+      <Panel position="top-left">
+        <div className="flex items-center bg-white p-2 rounded-md shadow-sm">
+          <Search className="h-4 w-4 text-gray-500 mr-2" />
+          <Input
+            placeholder="Search nodes..."
+            value={searchTerm}
+            onChange={onSearchChange}
+            className="h-8 w-[200px] border-none focus-visible:ring-0"
+          />
+          {searchTerm && (
+            <button className="h-8 w-8 p-0 ml-1" onClick={resetSearch}>
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </Panel>
     </div>
   );
 };
