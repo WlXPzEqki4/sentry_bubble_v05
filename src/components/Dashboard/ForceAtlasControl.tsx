@@ -32,11 +32,16 @@ export const ForceAtlasControl = () => {
     <div>
       <LayoutForceAtlas2Control
         settings={{
-          slowDown: 10,
+          linLogMode: false,
+          outboundAttractionDistribution: false,
+          adjustSizes: true,
+          edgeWeightInfluence: 1,
+          scalingRatio: 10,
           strongGravityMode: true,
           gravity: 1,
           barnesHutOptimize: true,
           barnesHutTheta: 0.5,
+          worker: false
         }}
         isRunning={running}
       />
