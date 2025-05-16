@@ -6,6 +6,7 @@ import BubbleChartNodeDetails from './BubbleChartNodeDetails';
 import { useBubbleChart } from '@/hooks/use-bubble-chart';
 import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } from "@react-sigma/core";
 import BubbleChartSigma from './BubbleChartSigma';
+import { toast } from "@/hooks/use-toast";
 
 interface BubbleChartVisualizationProps {
   selectedNetwork: string;
@@ -32,6 +33,13 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
     setSelectedNode({
       id: nodeId,
       data: attributes.originalData || attributes
+    });
+    
+    // Show a toast notification when a node is selected
+    toast({
+      title: `Selected: ${attributes.label || nodeId}`,
+      description: attributes.description || "Node selected",
+      duration: 2000,
     });
   }, []);
 
@@ -93,7 +101,7 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
                   }}
                 >
                   <BubbleChartSigma 
-                    key={`sigma-chart-${selectedNetwork}`}
+                    key={`sigma-chart-${selectedNetwork}-${nodes.length}`}
                     nodes={nodes}
                     edges={edges}
                     onNodeClick={handleNodeClick}

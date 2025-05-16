@@ -4,26 +4,13 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import Graph from "graphology";
+import { getCommunityColor } from '@/utils/bubble-chart/colors';
 
 interface BubbleChartSigmaProps {
   nodes: any[];
   edges: any[];
   onNodeClick: (nodeId: string, attributes: any) => void;
 }
-
-// Define a color palette for different communities
-const COMMUNITY_COLORS = [
-  '#8B5CF6', // Purple
-  '#EC4899', // Pink
-  '#F97316', // Orange
-  '#14B8A6', // Teal
-  '#3B82F6', // Blue
-  '#10B981', // Green
-  '#EF4444', // Red
-  '#F59E0B', // Amber
-  '#6366F1', // Indigo
-  '#8B5CF6', // Violet
-];
 
 const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({ 
   nodes, 
@@ -45,17 +32,12 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     // Add nodes to the graph with proper positioning
     nodes.forEach(node => {
-      const communityIndex = typeof node.data.community === 'number' 
-        ? node.data.community % COMMUNITY_COLORS.length 
-        : typeof node.data.community === 'string' 
-          ? parseInt(node.data.community, 10) % COMMUNITY_COLORS.length || 0
-          : 0;
-      
-      const nodeColor = node.data.color || COMMUNITY_COLORS[communityIndex];
-      const nodeSize = node.data.size ? Math.max(2, Math.min(15, node.data.size * 2)) : 5;
-      
       try {
-        // Use random positions but normalized between 0-1
+        // Calculate node size and color
+        const nodeColor = node.data.color || getCommunityColor(node.data.community);
+        const nodeSize = node.data.size ? Math.max(2, Math.min(15, node.data.size * 2)) : 5;
+        
+        // Normalize positions to fit in the viewport
         const x = node.position ? node.position.x / 1000 : Math.random();
         const y = node.position ? node.position.y / 1000 : Math.random();
         
@@ -93,11 +75,17 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     sigma.setGraph(graph);
     console.log("Graph set on sigma");
     
-    // Reset camera position and refresh
+    // Fix for camera reset - use the sigma camera methods that actually exist
     setTimeout(() => {
-      sigma.getCamera().reset();
-      sigma.refresh();
-    }, 50);
+      try {
+        // Instead of reset(), use the combination of these methods
+        sigma.getCamera().animate({ x: 0.5, y: 0.5, ratio: 1.5 });
+        sigma.refresh();
+        console.log("Camera position reset and graph refreshed");
+      } catch (err) {
+        console.error("Error resetting camera:", err);
+      }
+    }, 100);
     
   }, [nodes, edges, sigma]);
   
