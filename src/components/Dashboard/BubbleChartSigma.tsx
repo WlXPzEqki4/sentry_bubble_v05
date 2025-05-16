@@ -2,11 +2,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Sigma } from "sigma";
 import Graph from "graphology";
-import { Search, X } from 'lucide-react';
+import { Search, X, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Panel } from '@/components/ui/panel';
 import { getFamilyColor } from '@/utils/colors';
+import { toast } from '@/hooks/use-toast';
 
 interface BubbleChartSigmaProps {
   graphData: any;
@@ -15,6 +17,9 @@ interface BubbleChartSigmaProps {
   resetSearch: () => void;
   onNodeClick: (node: any) => void;
   isLoading: boolean;
+  handleNodeDrag?: (nodeId: string, x: number, y: number) => void;
+  handleNodeDragEnd?: (nodeId: string) => void;
+  restartSimulation?: () => void;
 }
 
 const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
@@ -23,12 +28,17 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   onSearchChange,
   resetSearch,
   onNodeClick,
-  isLoading
+  isLoading,
+  handleNodeDrag,
+  handleNodeDragEnd,
+  restartSimulation
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaRef = useRef<Sigma | null>(null);
   const graphRef = useRef<Graph | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [draggedNode, setDraggedNode] = useState<string | null>(null);
   
   // Initialize the graph when component mounts or data changes
   useEffect(() => {
@@ -45,22 +55,27 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
         size: node.size || 5,
         label: node.label,
         color: getFamilyColor(node.family),
-        x: Math.random(),
-        y: Math.random()
+        x: node.x ?? Math.random(),
+        y: node.y ?? Math.random()
       });
     });
 
     // Add edges to graph
     graphData.edges.forEach((edge: any) => {
-      graph.addEdge(
-        edge.source.toString(),
-        edge.target.toString(), 
-        {
-          weight: edge.weight,
-          size: edge.weight / 2,
-          color: "#aaa"
-        }
-      );
+      const sourceId = typeof edge.source === 'object' ? edge.source.id.toString() : edge.source.toString();
+      const targetId = typeof edge.target === 'object' ? edge.target.id.toString() : edge.target.toString();
+      
+      if (graph.hasNode(sourceId) && graph.hasNode(targetId)) {
+        graph.addEdge(
+          sourceId,
+          targetId, 
+          {
+            weight: edge.weight,
+            size: edge.weight / 2,
+            color: "#aaa"
+          }
+        );
+      }
     });
     
     // Initialize sigma - Fix for TS2353 error - removed unsupported properties
@@ -69,7 +84,6 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       defaultEdgeColor: "#eee",
       labelColor: { attribute: "color" },
       labelSize: 14,
-      // labelThreshold property removed as it's not part of the Sigma Settings type
       renderEdgeLabels: false
     });
     
@@ -77,12 +91,14 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     // Add event listeners
     sigma.on("clickNode", (event) => {
-      const nodeId = event.node;
-      const nodeAttributes = graph.getNodeAttributes(nodeId);
-      onNodeClick({ 
-        id: nodeId, 
-        data: nodeAttributes 
-      });
+      if (!isDragging) {
+        const nodeId = event.node;
+        const nodeAttributes = graph.getNodeAttributes(nodeId);
+        onNodeClick({ 
+          id: nodeId, 
+          data: nodeAttributes 
+        });
+      }
     });
 
     sigma.on("enterNode", (event) => {
@@ -97,12 +113,54 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       sigma.refresh();
     });
     
-    // Position camera - Fix for TS2353 error - removed duration property
+    // Add drag events
+    sigma.getMouseCaptor().on("mousedown", (e) => {
+      const nodeAtPosition = sigma.getNodeAtPosition(e.x, e.y);
+      if (nodeAtPosition) {
+        setIsDragging(true);
+        setDraggedNode(nodeAtPosition);
+        // Prevent the camera from moving while dragging
+        e.preventSigmaDefault();
+        e.original.preventDefault();
+        e.original.stopPropagation();
+      }
+    });
+
+    sigma.getMouseCaptor().on("mousemove", (e) => {
+      if (isDragging && draggedNode && handleNodeDrag) {
+        const camera = sigma.getCamera();
+        const pos = camera.viewportToGraph({x: e.x, y: e.y});
+        
+        // Update node position in graph
+        graph.setNodeAttribute(draggedNode, "x", pos.x);
+        graph.setNodeAttribute(draggedNode, "y", pos.y);
+        
+        // Call the handler to update the physics simulation
+        handleNodeDrag(draggedNode, pos.x, pos.y);
+        
+        // Prevent the camera from moving while dragging
+        e.preventSigmaDefault();
+        e.original.preventDefault();
+        e.original.stopPropagation();
+        
+        // Refresh rendering
+        sigma.refresh();
+      }
+    });
+
+    sigma.getMouseCaptor().on("mouseup", () => {
+      if (isDragging && draggedNode && handleNodeDragEnd) {
+        handleNodeDragEnd(draggedNode);
+        setIsDragging(false);
+        setDraggedNode(null);
+      }
+    });
+    
+    // Position camera
     sigma.getCamera().animate({
       x: 0.5,
       y: 0.5,
       ratio: 1.2
-      // duration property removed as it's not part of the CameraState type
     });
     
     // Cleanup
@@ -110,7 +168,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       sigma.kill();
       sigmaRef.current = null;
     };
-  }, [graphData, onNodeClick]);
+  }, [graphData, onNodeClick, handleNodeDrag, handleNodeDragEnd]);
 
   // Filter nodes based on search term
   useEffect(() => {
@@ -140,6 +198,18 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     sigma.refresh();
   }, [searchTerm]);
+
+  // Handle restart of force simulation
+  const handleRestartSimulation = () => {
+    if (restartSimulation) {
+      restartSimulation();
+      toast({
+        title: "Layout refreshed",
+        description: "Force-directed layout has been restarted",
+        variant: "default",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -177,6 +247,24 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
           )}
         </div>
       </div>
+
+      <div className="absolute top-4 right-4 z-10">
+        <Button 
+          onClick={handleRestartSimulation}
+          className="flex items-center space-x-1 bg-white text-gray-700 hover:bg-gray-100 shadow-sm"
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className="h-4 w-4" />
+          <span>Reset Layout</span>
+        </Button>
+      </div>
+
+      {isDragging && (
+        <div className="absolute bottom-4 right-4 z-10 bg-white p-2 rounded-md shadow-sm text-sm text-gray-500">
+          Dragging node: {draggedNode}
+        </div>
+      )}
     </div>
   );
 };

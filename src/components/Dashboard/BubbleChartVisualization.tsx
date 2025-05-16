@@ -18,7 +18,14 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
 
-  const { graphData, isLoading, error } = useBubbleChart(selectedNetwork, userClassificationLevel);
+  const { 
+    graphData, 
+    isLoading, 
+    error, 
+    handleNodeDrag,
+    handleNodeDragEnd,
+    restartSimulation 
+  } = useBubbleChart(selectedNetwork, userClassificationLevel);
 
   const handleNodeClick = (node: any) => {
     setSelectedNode(node);
@@ -60,6 +67,9 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
               resetSearch={resetSearch}
               onNodeClick={handleNodeClick}
               isLoading={isLoading}
+              handleNodeDrag={handleNodeDrag}
+              handleNodeDragEnd={handleNodeDragEnd}
+              restartSimulation={restartSimulation}
             />
           </div>
           
