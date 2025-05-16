@@ -63,13 +63,13 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       );
     });
     
-    // Initialize sigma
+    // Initialize sigma - Fix for TS2353 error - removed unsupported properties
     const sigma = new Sigma(graph, containerRef.current, {
       defaultNodeColor: "#9b87f5",
       defaultEdgeColor: "#eee",
-      labelColor: { attribute: "color" }, // Fix for TS2322 error - using object format instead of string
+      labelColor: { attribute: "color" },
       labelSize: 14,
-      labelThreshold: 7,
+      // labelThreshold property removed as it's not part of the Sigma Settings type
       renderEdgeLabels: false
     });
     
