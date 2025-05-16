@@ -30,27 +30,35 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     // Create a new graph instance
     const graph = new Graph();
     
+    // Debug to check node data structure
+    console.log("Sample node:", nodes[0]);
+    
     // Add nodes to the graph with proper positioning
     nodes.forEach(node => {
       try {
         // Calculate node size and color
-        const nodeColor = node.data.color || getCommunityColor(node.data.community);
-        const nodeSize = node.data.size ? Math.max(2, Math.min(15, node.data.size * 2)) : 5;
+        const nodeColor = node.data?.color || getCommunityColor(node.data?.community || 0);
+        const nodeSize = node.data?.size ? Math.max(3, Math.min(15, node.data.size * 2)) : 5;
         
-        // Normalize positions to fit in the viewport
-        const x = node.position ? node.position.x / 1000 : Math.random();
-        const y = node.position ? node.position.y / 1000 : Math.random();
+        // Use absolute positioning instead of normalized
+        const x = node.position?.x || Math.random() * 500;
+        const y = node.position?.y || Math.random() * 500;
         
         graph.addNode(node.id, {
           x,
           y,
           size: nodeSize,
-          label: node.data.label,
+          label: node.data?.label || `Node ${node.id}`,
           color: nodeColor,
-          description: node.data.description,
-          community: node.data.community,
+          description: node.data?.description || '',
+          community: node.data?.community || 0,
           originalData: node.data
         });
+        
+        // Log successful node addition
+        if (node.id === nodes[0].id) {
+          console.log(`Node ${node.id} added at position (${x}, ${y}) with color ${nodeColor} and size ${nodeSize}`);
+        }
       } catch (err) {
         console.error(`Error adding node ${node.id}:`, err);
       }
@@ -65,6 +73,8 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
             weight: edge.style?.strokeWidth || 1,
             color: "#aaa"
           });
+        } else {
+          console.warn(`Cannot add edge from ${edge.source} to ${edge.target}: missing node(s)`);
         }
       } catch (err) {
         console.error(`Error adding edge from ${edge.source} to ${edge.target}:`, err);
@@ -75,24 +85,34 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     sigma.setGraph(graph);
     console.log("Graph set on sigma");
     
-    // Fix for camera reset - use the sigma camera methods that actually exist
+    // Camera positioning - make sure nodes are visible
     setTimeout(() => {
       try {
-        // Instead of reset(), use the combination of these methods
-        sigma.getCamera().animate({ x: 0.5, y: 0.5, ratio: 1.5 });
-        sigma.refresh();
-        console.log("Camera position reset and graph refreshed");
+        // Fit graph to view - use camera methods that exist
+        if (nodes.length > 0) {
+          console.log("Setting camera to view all nodes");
+          sigma.getCamera().animate({ 
+            x: 0.5, 
+            y: 0.5, 
+            ratio: 2,
+            duration: 500 
+          });
+          sigma.refresh();
+        }
       } catch (err) {
-        console.error("Error resetting camera:", err);
+        console.error("Error setting camera:", err);
       }
-    }, 100);
+    }, 300);
     
   }, [nodes, edges, sigma]);
   
   // Initialize graph when component mounts or data changes
   useEffect(() => {
-    initializeGraph();
-  }, [initializeGraph]);
+    if (sigma && nodes.length > 0) {
+      console.log("Initializing graph with", nodes.length, "nodes");
+      initializeGraph();
+    }
+  }, [initializeGraph, sigma, nodes.length]);
   
   // Register click handler
   useEffect(() => {

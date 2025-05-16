@@ -7,6 +7,7 @@ import { getCommunityColor } from './colors';
  */
 export const formatNodes = (nodes: BubbleChartNode[]): ProcessedNode[] => {
   return nodes.map(node => {
+    // Ensure node has all required properties
     return {
       id: node.id,
       type: 'bubbleNode',
@@ -20,7 +21,7 @@ export const formatNodes = (nodes: BubbleChartNode[]): ProcessedNode[] => {
         label: node.label,
         size: node.size || 1.0,
         community: node.community,
-        description: node.description,
+        description: node.description || '',
         color: getCommunityColor(node.community)
       }
     };

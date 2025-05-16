@@ -26,6 +26,11 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
     console.log("BubbleChartVisualization - Selected Network:", selectedNetwork);
     console.log("BubbleChartVisualization - Nodes count:", nodes.length);
     console.log("BubbleChartVisualization - Edges count:", edges.length);
+    
+    // Log a sample node to check structure
+    if (nodes.length > 0) {
+      console.log("Sample node:", nodes[0]);
+    }
   }, [selectedNetwork, nodes, edges]);
 
   const handleNodeClick = useCallback((nodeId: string, attributes: any) => {
@@ -85,7 +90,7 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
             ) : (
               <div className="h-full w-full relative" data-testid="sigma-container">
                 <SigmaContainer
-                  key={`sigma-container-${selectedNetwork}`}
+                  key={`sigma-container-${selectedNetwork}-${nodes.length}`}
                   style={{ height: "100%", width: "100%" }}
                   settings={{
                     defaultNodeColor: "#6366F1",
