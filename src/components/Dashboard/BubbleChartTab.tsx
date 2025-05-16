@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BubbleChartNetworkSelector from './BubbleChartNetworkSelector';
 import BubbleChartVisualization from './BubbleChartVisualization';
 import { useBubbleChartNetworks } from '@/hooks/use-bubble-chart-networks';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from "sonner";
 
 interface BubbleChartTabProps {
   userClassificationLevel?: string;
@@ -17,6 +19,33 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
     isLoading: networksLoading,
     error: networksError
   } = useBubbleChartNetworks(userClassificationLevel);
+
+  // Effect to populate the database on first load
+  useEffect(() => {
+    const populateBubbleChartData = async () => {
+      try {
+        // Call the Edge Function to populate data
+        const { data, error } = await supabase.functions.invoke('populate-bubble-charts');
+        
+        if (error) {
+          console.error('Error populating bubble chart data:', error);
+          // Only show toast for non-404 errors, as 404 is expected if the function doesn't exist yet
+          if (!error.message.includes('404')) {
+            toast.error('Could not populate demo network data');
+          }
+        } else if (data) {
+          console.log('Bubble chart data:', data);
+          if (data.success) {
+            toast.success('Network data loaded successfully');
+          }
+        }
+      } catch (err) {
+        console.error('Error invoking populate function:', err);
+      }
+    };
+    
+    populateBubbleChartData();
+  }, []);
 
   // Enhanced function to handle tab changes without scrolling
   const handleTabChange = (value: string) => {
