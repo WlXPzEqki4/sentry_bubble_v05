@@ -2,7 +2,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Sigma } from "sigma";
 import Graph from "graphology";
-import { MousePointerClick, Grab, GrabIcon, Hand, Move } from 'lucide-react';
+import { Move, Grab } from 'lucide-react';
 
 interface UseSigmaInteractionProps {
   sigmaRef: React.MutableRefObject<Sigma | null>;
@@ -81,7 +81,7 @@ export const useSigmaInteraction = ({
       setHoveredNode(null);
       graph.setNodeAttribute(nodeId, "hovered", false);
       sigma.refresh();
-      // Reset cursor
+      // Reset cursor only if not dragging
       if (containerRef.current && !isDragging) {
         containerRef.current.style.cursor = 'default';
       }
@@ -111,6 +111,10 @@ export const useSigmaInteraction = ({
         // Prevent default browser behavior and stop propagation
         event.preventDefault();
         event.stopPropagation();
+      } else {
+        // If clicking on empty space, ensure we're in panning mode
+        mouseDownNodeRef.current = null;
+        hasMovedRef.current = false;
       }
     };
 
@@ -166,19 +170,30 @@ export const useSigmaInteraction = ({
         // End dragging state
         setIsDragging(false);
         setDraggedNode(null);
+        
+        // Reset refs
         mouseDownNodeRef.current = null;
         hasMovedRef.current = false;
         
-        // Restore original sigma mouse handlers
+        // Important: Restore original sigma mouse handlers
         if (sigma && originalHandlersRef.current) {
           sigma.getMouseCaptor().handleDown = originalHandlersRef.current.handleDown;
           sigma.getMouseCaptor().handleMove = originalHandlersRef.current.handleMove;
           sigma.getMouseCaptor().handleUp = originalHandlersRef.current.handleUp;
         }
         
-        // Reset cursor
+        // Reset cursor based on hover state
         if (containerRef.current) {
-          containerRef.current.style.cursor = hoveredNode ? 'grab' : 'default';
+          // Need to recheck if we're still hovering over a node after drag
+          const nodeUnderCursor = getNodeAtPosition(event.offsetX, event.offsetY);
+          containerRef.current.style.cursor = nodeUnderCursor ? 'grab' : 'default';
+          
+          // Update hover state if needed
+          if (nodeUnderCursor && nodeUnderCursor !== hoveredNode) {
+            setHoveredNode(nodeUnderCursor);
+            graph.setNodeAttribute(nodeUnderCursor, "hovered", true);
+            sigma.refresh();
+          }
         }
         
         // Prevent the event from being processed further
@@ -190,6 +205,7 @@ export const useSigmaInteraction = ({
     // Handle mouse leave from container
     const handleMouseLeave = () => {
       if (mouseDownNodeRef.current || isDragging) {
+        // End any ongoing drag operations
         mouseDownNodeRef.current = null;
         setIsDragging(false);
         setDraggedNode(null);
@@ -202,8 +218,15 @@ export const useSigmaInteraction = ({
           sigma.getMouseCaptor().handleUp = originalHandlersRef.current.handleUp;
         }
         
+        // Reset cursor and hover states
         if (containerRef.current) {
           containerRef.current.style.cursor = 'default';
+        }
+        
+        if (hoveredNode) {
+          setHoveredNode(null);
+          graph.setNodeAttribute(hoveredNode, "hovered", false);
+          sigma.refresh();
         }
       }
     };
@@ -211,9 +234,6 @@ export const useSigmaInteraction = ({
     // Add event listeners
     sigma.on("enterNode", handleNodeEnter);
     sigma.on("leaveNode", handleNodeLeave);
-    
-    // Don't use sigma's clickNode event because we handle clicks manually
-    // to differentiate between clicks and drags
     
     const container = containerRef.current;
     if (container) {
