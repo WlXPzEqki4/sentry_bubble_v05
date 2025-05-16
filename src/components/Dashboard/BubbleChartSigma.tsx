@@ -159,15 +159,24 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
         const camera = sigma.getCamera();
         
         // Convert viewport coordinates to graph coordinates
-        // Use the current camera state to convert
-        const position = camera.viewportToGraph({x: e.x, y: e.y});
+        // We need to manually convert since viewportToGraph doesn't exist on camera
+        // The inverse of graphToViewport is what we need
+        const viewportX = e.x;
+        const viewportY = e.y;
+        
+        // Get current camera state
+        const cameraState = camera.getState();
+        
+        // Convert viewport coordinates to graph coordinates using camera state
+        const graphX = (viewportX - cameraState.x) / cameraState.ratio;
+        const graphY = (viewportY - cameraState.y) / cameraState.ratio;
         
         // Update node position in graph
-        graph.setNodeAttribute(draggedNode, "x", position.x);
-        graph.setNodeAttribute(draggedNode, "y", position.y);
+        graph.setNodeAttribute(draggedNode, "x", graphX);
+        graph.setNodeAttribute(draggedNode, "y", graphY);
         
         // Call the handler to update the physics simulation
-        handleNodeDrag(draggedNode, position.x, position.y);
+        handleNodeDrag(draggedNode, graphX, graphY);
         
         // Prevent the camera from moving while dragging
         e.preventSigmaDefault();
