@@ -8,7 +8,7 @@ import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } fro
 import BubbleChartSigma from './BubbleChartSigma';
 
 // Import the CSS directly
-import "sigma/build/sigma.min.css";
+import "@react-sigma/core/lib/sigma.css";
 
 interface BubbleChartVisualizationProps {
   selectedNetwork: string;

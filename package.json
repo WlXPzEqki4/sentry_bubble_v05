@@ -69,6 +69,7 @@
     "react-sigma": "^1.2.35",
     "reactflow": "^11.10.4",
     "recharts": "^2.12.7",
+    "sigma": "^2.4.0",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
