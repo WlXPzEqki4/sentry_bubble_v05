@@ -2,13 +2,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Sigma } from "sigma";
 import Graph from "graphology";
-import { Search, X, RefreshCw } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Panel } from '@/components/ui/panel';
 import { getFamilyColor } from '@/utils/colors';
-import { toast } from '@/hooks/use-toast';
 
 interface BubbleChartSigmaProps {
   graphData: any;
@@ -17,9 +15,6 @@ interface BubbleChartSigmaProps {
   resetSearch: () => void;
   onNodeClick: (node: any) => void;
   isLoading: boolean;
-  handleNodeDrag?: (nodeId: string, x: number, y: number) => void;
-  handleNodeDragEnd?: (nodeId: string) => void;
-  restartSimulation?: () => void;
 }
 
 const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
@@ -28,17 +23,12 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   onSearchChange,
   resetSearch,
   onNodeClick,
-  isLoading,
-  handleNodeDrag,
-  handleNodeDragEnd,
-  restartSimulation
+  isLoading
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaRef = useRef<Sigma | null>(null);
   const graphRef = useRef<Graph | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [draggedNode, setDraggedNode] = useState<string | null>(null);
   
   // Initialize the graph when component mounts or data changes
   useEffect(() => {
@@ -55,27 +45,22 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
         size: node.size || 5,
         label: node.label,
         color: getFamilyColor(node.family),
-        x: node.x ?? Math.random(),
-        y: node.y ?? Math.random()
+        x: Math.random(),
+        y: Math.random()
       });
     });
 
     // Add edges to graph
     graphData.edges.forEach((edge: any) => {
-      const sourceId = typeof edge.source === 'object' ? edge.source.id.toString() : edge.source.toString();
-      const targetId = typeof edge.target === 'object' ? edge.target.id.toString() : edge.target.toString();
-      
-      if (graph.hasNode(sourceId) && graph.hasNode(targetId)) {
-        graph.addEdge(
-          sourceId,
-          targetId, 
-          {
-            weight: edge.weight,
-            size: edge.weight / 2,
-            color: "#aaa"
-          }
-        );
-      }
+      graph.addEdge(
+        edge.source.toString(),
+        edge.target.toString(), 
+        {
+          weight: edge.weight,
+          size: edge.weight / 2,
+          color: "#aaa"
+        }
+      );
     });
     
     // Initialize sigma - Fix for TS2353 error - removed unsupported properties
@@ -84,6 +69,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       defaultEdgeColor: "#eee",
       labelColor: { attribute: "color" },
       labelSize: 14,
+      // labelThreshold property removed as it's not part of the Sigma Settings type
       renderEdgeLabels: false
     });
     
@@ -91,14 +77,12 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     // Add event listeners
     sigma.on("clickNode", (event) => {
-      if (!isDragging) {
-        const nodeId = event.node;
-        const nodeAttributes = graph.getNodeAttributes(nodeId);
-        onNodeClick({ 
-          id: nodeId, 
-          data: nodeAttributes 
-        });
-      }
+      const nodeId = event.node;
+      const nodeAttributes = graph.getNodeAttributes(nodeId);
+      onNodeClick({ 
+        id: nodeId, 
+        data: nodeAttributes 
+      });
     });
 
     sigma.on("enterNode", (event) => {
@@ -113,94 +97,12 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       sigma.refresh();
     });
     
-    // Add drag events
-    sigma.getMouseCaptor().on("mousedown", (e) => {
-      // Instead of trying to use getRenderer (which doesn't exist), 
-      // use a custom approach to find the node under the mouse
-      const mouseCaptor = sigma.getMouseCaptor();
-      const camera = sigma.getCamera();
-      
-      // Convert screen coordinates to sigma viewport coordinates
-      const mouseX = e.x;
-      const mouseY = e.y;
-      
-      // Find the closest node to mouse position
-      let closestNode: string | null = null;
-      let minDistance = Infinity;
-      
-      graph.forEachNode((nodeId) => {
-        const attributes = graph.getNodeAttributes(nodeId);
-        const nodePosition = sigma.graphToViewport(attributes.x, attributes.y);
-        const dx = nodePosition.x - mouseX;
-        const dy = nodePosition.y - mouseY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        // Adjust the hit radius based on node size
-        const hitRadius = attributes.size * camera.ratio;
-        
-        if (distance < minDistance && distance < hitRadius) {
-          minDistance = distance;
-          closestNode = nodeId;
-        }
-      });
-      
-      if (closestNode) {
-        setIsDragging(true);
-        setDraggedNode(closestNode);
-        // Prevent the camera from moving while dragging
-        e.preventSigmaDefault();
-        e.original.preventDefault();
-        e.original.stopPropagation();
-      }
-    });
-
-    sigma.getMouseCaptor().on("mousemove", (e) => {
-      if (isDragging && draggedNode && handleNodeDrag) {
-        const camera = sigma.getCamera();
-        
-        // Convert viewport coordinates to graph coordinates
-        // We need to manually convert since viewportToGraph doesn't exist on camera
-        // The inverse of graphToViewport is what we need
-        const viewportX = e.x;
-        const viewportY = e.y;
-        
-        // Get current camera state
-        const cameraState = camera.getState();
-        
-        // Convert viewport coordinates to graph coordinates using camera state
-        const graphX = (viewportX - cameraState.x) / cameraState.ratio;
-        const graphY = (viewportY - cameraState.y) / cameraState.ratio;
-        
-        // Update node position in graph
-        graph.setNodeAttribute(draggedNode, "x", graphX);
-        graph.setNodeAttribute(draggedNode, "y", graphY);
-        
-        // Call the handler to update the physics simulation
-        handleNodeDrag(draggedNode, graphX, graphY);
-        
-        // Prevent the camera from moving while dragging
-        e.preventSigmaDefault();
-        e.original.preventDefault();
-        e.original.stopPropagation();
-        
-        // Refresh rendering
-        sigma.refresh();
-      }
-    });
-
-    sigma.getMouseCaptor().on("mouseup", () => {
-      if (isDragging && draggedNode && handleNodeDragEnd) {
-        handleNodeDragEnd(draggedNode);
-        setIsDragging(false);
-        setDraggedNode(null);
-      }
-    });
-    
-    // Position camera
+    // Position camera - Fix for TS2353 error - removed duration property
     sigma.getCamera().animate({
       x: 0.5,
       y: 0.5,
       ratio: 1.2
+      // duration property removed as it's not part of the CameraState type
     });
     
     // Cleanup
@@ -208,7 +110,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       sigma.kill();
       sigmaRef.current = null;
     };
-  }, [graphData, onNodeClick, handleNodeDrag, handleNodeDragEnd]);
+  }, [graphData, onNodeClick]);
 
   // Filter nodes based on search term
   useEffect(() => {
@@ -238,18 +140,6 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     sigma.refresh();
   }, [searchTerm]);
-
-  // Handle restart of force simulation
-  const handleRestartSimulation = () => {
-    if (restartSimulation) {
-      restartSimulation();
-      toast({
-        title: "Layout refreshed",
-        description: "Force-directed layout has been restarted",
-        variant: "default",
-      });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -287,24 +177,6 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
           )}
         </div>
       </div>
-
-      <div className="absolute top-4 right-4 z-10">
-        <Button 
-          onClick={handleRestartSimulation}
-          className="flex items-center space-x-1 bg-white text-gray-700 hover:bg-gray-100 shadow-sm"
-          variant="outline"
-          size="sm"
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>Reset Layout</span>
-        </Button>
-      </div>
-
-      {isDragging && (
-        <div className="absolute bottom-4 right-4 z-10 bg-white p-2 rounded-md shadow-sm text-sm text-gray-500">
-          Dragging node: {draggedNode}
-        </div>
-      )}
     </div>
   );
 };
