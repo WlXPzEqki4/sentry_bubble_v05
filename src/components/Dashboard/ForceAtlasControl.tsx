@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from "react";
 import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 import { Button } from "@/components/ui/button";
-import { Panel } from "@react-sigma/core";
+import { useSigma } from "@react-sigma/core";
 
 export const ForceAtlasControl = () => {
+  const sigma = useSigma();
   const { start, stop, isRunning, kill } = useWorkerLayoutForceAtlas2({
     settings: {
       barnesHutOptimize: true,
@@ -29,7 +30,7 @@ export const ForceAtlasControl = () => {
   }, [start, stop, kill]);
 
   return (
-    <Panel position="bottom-left">
+    <div className="absolute bottom-4 left-4 z-10">
       <div className="bg-white p-2 rounded-md shadow-sm">
         <Button 
           onClick={isRunning ? stop : start}
@@ -39,6 +40,6 @@ export const ForceAtlasControl = () => {
           {isRunning ? "Stop Layout" : "Apply Layout"}
         </Button>
       </div>
-    </Panel>
+    </div>
   );
 };

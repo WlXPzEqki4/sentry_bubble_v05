@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Panel } from "@react-sigma/core";
 import { useRegisterEvents, useSigma } from "@react-sigma/core";
 import Graph from "graphology";
 import { ForceAtlasControl } from './ForceAtlasControl';
@@ -84,9 +83,6 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       }
     });
     
-    // Apply layout if needed - this can be customized
-    // This is where ForceAtlas2 or other layouts would be applied
-    
     return () => {
       // Cleanup
       registerEvents({});
@@ -114,7 +110,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   
   return (
     <>
-      <Panel position="top-left">
+      <div className="absolute top-4 left-4 z-10">
         <div className="flex items-center bg-white p-2 rounded-md shadow-sm">
           <Search className="h-4 w-4 text-gray-500 mr-2" />
           <Input
@@ -124,7 +120,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
             className="h-8 w-[200px] border-none focus-visible:ring-0"
           />
         </div>
-      </Panel>
+      </div>
       <ForceAtlasControl />
     </>
   );

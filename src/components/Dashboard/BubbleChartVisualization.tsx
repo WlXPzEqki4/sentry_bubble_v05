@@ -5,8 +5,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import BubbleChartNodeDetails from './BubbleChartNodeDetails';
 import { useBubbleChart } from '@/hooks/use-bubble-chart';
 import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } from "@react-sigma/core";
-import "@react-sigma/core/lib/react-sigma.min.css";
 import BubbleChartSigma from './BubbleChartSigma';
+
+// Import the CSS directly
+import "sigma/build/sigma.min.css";
 
 interface BubbleChartVisualizationProps {
   selectedNetwork: string;
@@ -68,7 +70,7 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
     <Card className="mt-4">
       <CardContent className="p-0">
         <div className="flex flex-col md:flex-row">
-          <div className={`flex-grow ${selectedNode ? 'w-2/3' : 'w-full'}`} style={{ height: '70vh' }}>
+          <div className={`flex-grow ${selectedNode ? 'w-2/3' : 'w-full'} relative`} style={{ height: '70vh' }}>
             {nodes.length === 0 ? (
               <div className="h-full w-full flex items-center justify-center">
                 <p className="text-gray-500">No data available for this network.</p>
