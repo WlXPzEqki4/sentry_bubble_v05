@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSetSettings, useRegisterEvents, useSigma } from "@react-sigma/core";
-import { FA2Layout } from "@react-sigma/layout-forceatlas2";
+import { ForceAtlas2Control } from "@react-sigma/layout-forceatlas2";
 
 export const ForceAtlasControl = () => {
   const [running, setRunning] = useState(false);
@@ -30,7 +30,7 @@ export const ForceAtlasControl = () => {
 
   return (
     <div>
-      <FA2Layout
+      <ForceAtlas2Control
         settings={{
           slowDown: 10,
           strongGravityMode: true,
@@ -38,7 +38,7 @@ export const ForceAtlasControl = () => {
           barnesHutOptimize: true,
           barnesHutTheta: 0.5,
         }}
-        iterations={running ? 100 : 0}
+        isRunning={running}
       />
       <button
         className="absolute top-4 right-4 z-10 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow"
