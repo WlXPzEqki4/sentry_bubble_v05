@@ -20,6 +20,8 @@ export const useSigmaInteraction = ({
   const [isDragging, setIsDragging] = useState(false);
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
   const originalHandlersRef = useRef<any>(null);
+  const mouseDownNodeRef = useRef<string | null>(null);
+  const hasMovedRef = useRef<boolean>(false);
 
   useEffect(() => {
     const sigma = sigmaRef.current;
@@ -91,21 +93,21 @@ export const useSigmaInteraction = ({
       const nodeId = getNodeAtPosition(event.offsetX, event.offsetY);
       
       if (nodeId) {
-        // Start dragging the node
-        setIsDragging(true);
-        setDraggedNode(nodeId);
+        // Store node that was clicked on, but don't start dragging yet
+        mouseDownNodeRef.current = nodeId;
+        hasMovedRef.current = false;
         
-        // Completely disable sigma's mouse handlers during node dragging
+        // Disable sigma's mouse handlers completely
         sigma.getMouseCaptor().handleDown = () => {};
         sigma.getMouseCaptor().handleMove = () => {};
         sigma.getMouseCaptor().handleUp = () => {};
         
-        // Change cursor to grabbing to indicate active drag
+        // Change cursor to grabbing to indicate potential drag
         if (containerRef.current) {
           containerRef.current.style.cursor = 'grabbing';
         }
         
-        // Prevent normal event handling
+        // Prevent default browser behavior and stop propagation
         event.preventDefault();
         event.stopPropagation();
       }
@@ -113,7 +115,16 @@ export const useSigmaInteraction = ({
 
     // Mouse move handler for dragging
     const handleMouseMove = (event: MouseEvent) => {
-      if (!isDragging || !draggedNode || !sigma || !graph) return;
+      const nodeId = mouseDownNodeRef.current;
+      
+      if (!nodeId || !sigma || !graph) return;
+      
+      // If we detect movement while mouse is down on a node, start dragging
+      if (!isDragging) {
+        setIsDragging(true);
+        setDraggedNode(nodeId);
+        hasMovedRef.current = true;
+      }
       
       try {
         // Get mouse position in graph coordinates
@@ -123,8 +134,8 @@ export const useSigmaInteraction = ({
         });
         
         // Update node position
-        graph.setNodeAttribute(draggedNode, "x", mousePosition.x);
-        graph.setNodeAttribute(draggedNode, "y", mousePosition.y);
+        graph.setNodeAttribute(nodeId, "x", mousePosition.x);
+        graph.setNodeAttribute(nodeId, "y", mousePosition.y);
         
         // Refresh to show new position
         sigma.refresh();
@@ -139,10 +150,23 @@ export const useSigmaInteraction = ({
 
     // Mouse up handler to end dragging
     const handleMouseUp = (event: MouseEvent) => {
-      if (isDragging && draggedNode) {
-        // End dragging
+      const nodeId = mouseDownNodeRef.current;
+      
+      if (nodeId) {
+        // If mouse was down on a node but didn't move much, consider it a click
+        if (!hasMovedRef.current) {
+          const nodeAttributes = graph.getNodeAttributes(nodeId);
+          onNodeClick({ 
+            id: nodeId, 
+            data: nodeAttributes 
+          });
+        }
+        
+        // End dragging state
         setIsDragging(false);
         setDraggedNode(null);
+        mouseDownNodeRef.current = null;
+        hasMovedRef.current = false;
         
         // Restore original sigma mouse handlers
         if (sigma && originalHandlersRef.current) {
@@ -164,9 +188,11 @@ export const useSigmaInteraction = ({
 
     // Handle mouse leave from container
     const handleMouseLeave = () => {
-      if (isDragging) {
+      if (mouseDownNodeRef.current || isDragging) {
+        mouseDownNodeRef.current = null;
         setIsDragging(false);
         setDraggedNode(null);
+        hasMovedRef.current = false;
         
         // Restore original sigma mouse handlers
         if (sigma && originalHandlersRef.current) {
@@ -181,22 +207,12 @@ export const useSigmaInteraction = ({
       }
     };
 
-    // Capture click separately to avoid triggering node selection during drag end
-    const handleNodeClick = (event: any) => {
-      if (!isDragging) {
-        const nodeId = event.node;
-        const nodeAttributes = graph.getNodeAttributes(nodeId);
-        onNodeClick({ 
-          id: nodeId, 
-          data: nodeAttributes 
-        });
-      }
-    };
-
     // Add event listeners
     sigma.on("enterNode", handleNodeEnter);
     sigma.on("leaveNode", handleNodeLeave);
-    sigma.on("clickNode", handleNodeClick);
+    
+    // Don't use sigma's clickNode event because we handle clicks manually
+    // to differentiate between clicks and drags
     
     const container = containerRef.current;
     if (container) {
@@ -211,7 +227,6 @@ export const useSigmaInteraction = ({
       if (sigma) {
         sigma.removeListener("enterNode", handleNodeEnter);
         sigma.removeListener("leaveNode", handleNodeLeave);
-        sigma.removeListener("clickNode", handleNodeClick);
         
         if (originalHandlersRef.current) {
           sigma.getMouseCaptor().handleDown = originalHandlersRef.current.handleDown;
@@ -227,7 +242,7 @@ export const useSigmaInteraction = ({
         container.removeEventListener('mouseleave', handleMouseLeave);
       }
     };
-  }, [isDragging, draggedNode, hoveredNode, sigmaRef, graphRef, containerRef, onNodeClick]);
+  }, [isDragging, hoveredNode, sigmaRef, graphRef, containerRef, onNodeClick]);
 
   return {
     hoveredNode,
