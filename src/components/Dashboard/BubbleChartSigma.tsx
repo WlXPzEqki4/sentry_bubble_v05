@@ -127,6 +127,13 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       return null;
     };
 
+    // Store original mouse captor methods to restore them later
+    const originalHandlers = {
+      handleDown: sigma.getMouseCaptor().handleDown,
+      handleMove: sigma.getMouseCaptor().handleMove,
+      handleUp: sigma.getMouseCaptor().handleUp
+    };
+
     // Hover effects for nodes
     const handleNodeEnter = (event: any) => {
       const nodeId = event.node;
@@ -161,6 +168,12 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       if (nodeId) {
         // Prevent standard click behavior when dragging starts
         event.preventDefault();
+        
+        // Disable sigma's native mouse handling during node dragging
+        sigma.getMouseCaptor().handleDown = (e: any) => {
+          // Do nothing - prevent panning
+        };
+        
         // Start dragging the node
         setIsDragging(true);
         setDraggedNode(nodeId);
@@ -194,6 +207,13 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
         setIsDragging(false);
         setDraggedNode(null);
         
+        // Restore original sigma mouse handlers
+        if (sigma) {
+          sigma.getMouseCaptor().handleDown = originalHandlers.handleDown;
+          sigma.getMouseCaptor().handleMove = originalHandlers.handleMove;
+          sigma.getMouseCaptor().handleUp = originalHandlers.handleUp;
+        }
+        
         // Reset cursor
         if (containerRef.current) {
           containerRef.current.style.cursor = hoveredNode ? 'grab' : 'default';
@@ -206,6 +226,13 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       if (isDragging && draggedNode) {
         setIsDragging(false);
         setDraggedNode(null);
+        
+        // Restore original sigma mouse handlers when mouse leaves
+        if (sigma) {
+          sigma.getMouseCaptor().handleDown = originalHandlers.handleDown;
+          sigma.getMouseCaptor().handleMove = originalHandlers.handleMove;
+          sigma.getMouseCaptor().handleUp = originalHandlers.handleUp;
+        }
         
         if (containerRef.current) {
           containerRef.current.style.cursor = 'default';
@@ -244,6 +271,11 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
         sigma.removeListener("enterNode", handleNodeEnter);
         sigma.removeListener("leaveNode", handleNodeLeave);
         sigma.removeListener("clickNode", handleNodeClick);
+        
+        // Restore original handlers if they were overridden
+        sigma.getMouseCaptor().handleDown = originalHandlers.handleDown;
+        sigma.getMouseCaptor().handleMove = originalHandlers.handleMove;
+        sigma.getMouseCaptor().handleUp = originalHandlers.handleUp;
       }
       
       if (container) {
