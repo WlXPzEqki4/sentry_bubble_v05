@@ -213,10 +213,19 @@ const BubbleChart2Tab: React.FC = () => {
               nodeCanvasObject={nodeCanvasObject}
               linkWidth={link => (link as any).value / 2}
               linkColor={() => '#999'}
-              // Apply force layout options from state
-              chargeStrength={forceConfig.chargeStrength}
-              linkDistance={forceConfig.linkDistance}
-              centeringStrength={forceConfig.centerStrength}
+              // Apply force layout options from state using correct prop names
+              d3Force={(force) => {
+                if (force) {
+                  // Apply charge (repulsion) force
+                  force.force('charge').strength(forceConfig.chargeStrength);
+                  
+                  // Apply link distance
+                  force.force('link').distance(forceConfig.linkDistance);
+                  
+                  // Apply center force
+                  force.force('center').strength(forceConfig.centerStrength);
+                }
+              }}
               d3VelocityDecay={0.3}
               cooldownTime={2000}
             />
