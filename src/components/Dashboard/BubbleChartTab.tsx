@@ -21,6 +21,10 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
   React.useEffect(() => {
     console.log(`BubbleChartTab - User classification level: ${userClassificationLevel}`);
     console.log(`Available network options: ${networkOptions.length}`);
+    
+    if (networkOptions.length > 0) {
+      console.log(`Available networks:`, networkOptions.map(n => n.name).join(', '));
+    }
   }, [userClassificationLevel, networkOptions]);
 
   return (

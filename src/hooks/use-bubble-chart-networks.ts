@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from "sonner";
 
@@ -43,20 +42,33 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
           },
         ];
         
-        const normalizedUserClassLevel = userClassificationLevel.toLowerCase().replace(/[_\s-]+/g, '');
-        console.log(`User classification level: ${userClassificationLevel} (normalized: ${normalizedUserClassLevel})`);
+        // Improved logic to handle compound classification levels
+        // Parse the user's classification level into an array
+        const userLevels = userClassificationLevel.toLowerCase().split(/[,\s]+/).filter(Boolean);
+        console.log(`User classification levels parsed:`, userLevels);
         
         // Filter networks based on user classification level
         const filteredNetworks = mockNetworks.filter(network => {
-          const normalizedNetworkClass = network.classification_level.toLowerCase().replace(/[_\s-]+/g, '');
-          console.log(`Network: ${network.name}, Class: ${network.classification_level} (normalized: ${normalizedNetworkClass})`);
+          const networkLevel = network.classification_level.toLowerCase().replace(/[_\s-]+/g, '');
+          console.log(`Checking network: ${network.name}, Class: ${networkLevel}`);
           
-          // Simple classification hierarchy check
-          if (normalizedUserClassLevel === 'topsecret') return true;
-          if (normalizedUserClassLevel === 'secret' && normalizedNetworkClass !== 'topsecret') return true;
-          if (normalizedUserClassLevel === 'unclassified' && normalizedNetworkClass === 'unclassified') return true;
+          // If user has top secret clearance, they can see everything
+          if (userLevels.includes('topsecret') || userLevels.includes('top_secret') || userLevels.includes('top-secret')) {
+            return true;
+          }
           
-          return false;
+          // If network is top secret and user doesn't have top secret clearance, filter it out
+          if (networkLevel === 'topsecret' || networkLevel === 'top_secret' || networkLevel === 'top-secret') {
+            return false;
+          }
+          
+          // If user has secret clearance, they can see secret and unclassified
+          if (userLevels.includes('secret')) {
+            return true;
+          }
+          
+          // Otherwise, user can only see unclassified
+          return networkLevel === 'unclassified';
         });
         
         console.log(`Filtered networks: ${filteredNetworks.length}`);
