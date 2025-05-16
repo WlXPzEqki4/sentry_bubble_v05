@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -34,11 +35,13 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   const sigma = useSigma();
   const registerEvents = useRegisterEvents();
   const [graphInitialized, setGraphInitialized] = useState(false);
+  const [localSearchTerm, setLocalSearchTerm] = useState<string>("");
   
   // Debug logging to verify data
   useEffect(() => {
     console.log('BubbleChartSigma - Nodes received:', nodes.length);
     console.log('BubbleChartSigma - Edges received:', edges.length);
+    console.log('Nodes sample:', nodes.slice(0, 2));
   }, [nodes, edges]);
 
   useEffect(() => {
@@ -122,30 +125,41 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     };
   }, [nodes, edges, sigma, registerEvents, onNodeClick]);
   
+  // Handle local search
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalSearchTerm(e.target.value);
+  };
+
   // Filter nodes based on search term
   useEffect(() => {
     if (!sigma || !graphInitialized) return;
     
     try {
-      if (!searchTerm) {
+      const searchValue = localSearchTerm.toLowerCase();
+      
+      if (!searchValue) {
         // If no search term, show all nodes
         sigma.getGraph().forEachNode((node) => {
           sigma.getGraph().setNodeAttribute(node, "hidden", false);
         });
+        sigma.refresh();
         return;
       }
       
       // Otherwise, hide nodes that don't match the search term
       sigma.getGraph().forEachNode((node) => {
         const attributes = sigma.getGraph().getNodeAttributes(node);
-        const matchesSearch = attributes.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            attributes.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = 
+          attributes.label?.toLowerCase().includes(searchValue) ||
+          attributes.description?.toLowerCase().includes(searchValue);
         sigma.getGraph().setNodeAttribute(node, "hidden", !matchesSearch);
       });
+      
+      sigma.refresh();
     } catch (error) {
       console.error('Error filtering nodes:', error);
     }
-  }, [searchTerm, sigma, graphInitialized]);
+  }, [localSearchTerm, sigma, graphInitialized]);
   
   return (
     <div className="absolute inset-0 z-0">
@@ -154,8 +168,8 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
           <Search className="h-4 w-4 text-gray-500 mr-2" />
           <Input
             placeholder="Search nodes..."
-            value={searchTerm}
-            readOnly={true}
+            value={localSearchTerm}
+            onChange={handleSearchChange}
             className="h-8 w-[200px] border-none focus-visible:ring-0"
           />
         </div>

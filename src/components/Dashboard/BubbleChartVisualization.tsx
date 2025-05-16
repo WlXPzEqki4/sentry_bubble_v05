@@ -65,6 +65,9 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
       .sigma-labels > .sigma-label {
         font-family: sans-serif;
       }
+      .sigma-hovers, .sigma-tooltips {
+        pointer-events: none;
+      }
     `;
     document.head.appendChild(style);
     
@@ -119,7 +122,10 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
                     labelDensity: 0.07,
                     labelGridCellSize: 60,
                     labelRenderedSizeThreshold: 6,
-                    allowInvalidContainer: true
+                    allowInvalidContainer: true,
+                    renderEdgeLabels: true,
+                    minCameraRatio: 0.1,
+                    maxCameraRatio: 10
                   }}
                 >
                   <BubbleChartSigma 
