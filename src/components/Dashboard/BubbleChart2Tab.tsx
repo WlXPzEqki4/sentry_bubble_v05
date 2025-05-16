@@ -78,6 +78,18 @@ const BubbleChart2Tab: React.FC = () => {
     ]
   });
 
+  // Force layout configuration options
+  const [forceConfig, setForceConfig] = useState({
+    chargeStrength: -120,
+    linkDistance: 30,
+    centerStrength: 0.1
+  });
+
+  // Handle slider changes
+  const handleForceConfigChange = (param: keyof typeof forceConfig, value: number) => {
+    setForceConfig(prev => ({ ...prev, [param]: value }));
+  };
+
   // Color mapping for families
   const getFamilyColor = (family: string): string => {
     switch (family) {
@@ -148,12 +160,63 @@ const BubbleChart2Tab: React.FC = () => {
             </p>
           </div>
           
+          {/* Force layout controls */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Charge Strength: {forceConfig.chargeStrength}
+              </label>
+              <input
+                type="range"
+                min="-300"
+                max="-10"
+                value={forceConfig.chargeStrength}
+                onChange={(e) => handleForceConfigChange('chargeStrength', parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <p className="text-xs text-gray-500 mt-1">Controls node repulsion (negative values) or attraction (positive)</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Link Distance: {forceConfig.linkDistance}
+              </label>
+              <input
+                type="range"
+                min="10"
+                max="100"
+                value={forceConfig.linkDistance}
+                onChange={(e) => handleForceConfigChange('linkDistance', parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <p className="text-xs text-gray-500 mt-1">Target distance between connected nodes</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Center Gravity: {forceConfig.centerStrength}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={forceConfig.centerStrength}
+                onChange={(e) => handleForceConfigChange('centerStrength', parseFloat(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <p className="text-xs text-gray-500 mt-1">Strength of central gravity (pulls nodes to center)</p>
+            </div>
+          </div>
+          
           <div className="h-[600px] w-full border border-gray-200 rounded-md overflow-hidden">
             <ForceGraph2D
               graphData={graphData}
               nodeCanvasObject={nodeCanvasObject}
               linkWidth={link => (link as any).value / 2}
               linkColor={() => '#999'}
+              // Apply force layout options from state
+              chargeStrength={forceConfig.chargeStrength}
+              linkDistance={forceConfig.linkDistance}
+              centeringStrength={forceConfig.centerStrength}
               d3VelocityDecay={0.3}
               cooldownTime={2000}
             />
