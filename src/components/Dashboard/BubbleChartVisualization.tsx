@@ -7,8 +7,7 @@ import { useBubbleChart } from '@/hooks/use-bubble-chart';
 import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } from "@react-sigma/core";
 import BubbleChartSigma from './BubbleChartSigma';
 
-// Import the CSS directly
-import "@react-sigma/core/lib/sigma.css";
+// CSS is included in the component with inline styles
 
 interface BubbleChartVisualizationProps {
   selectedNetwork: string;
@@ -43,6 +42,31 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
   const resetSearch = () => {
     setSearchTerm('');
   };
+
+  // Add global CSS for Sigma.js
+  useEffect(() => {
+    // Create a style element for Sigma CSS
+    const style = document.createElement('style');
+    style.textContent = `
+      .sigma-mouse {
+        cursor: crosshair;
+      }
+      .sigma-mouse.dragging {
+        cursor: move;
+      }
+      .sigma-mouse.selecting {
+        cursor: crosshair;
+      }
+      .sigma-labels > .sigma-label {
+        font-family: sans-serif;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   if (error) {
     return (
