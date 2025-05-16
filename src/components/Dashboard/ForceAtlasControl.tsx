@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSetSettings, useRegisterEvents, useSigma } from "@react-sigma/core";
-import { ForceAtlas2Control } from "@react-sigma/layout-forceatlas2";
+import { LayoutForceAtlas2Control } from "@react-sigma/layout-forceatlas2";
 
 export const ForceAtlasControl = () => {
   const [running, setRunning] = useState(false);
@@ -30,7 +30,7 @@ export const ForceAtlasControl = () => {
 
   return (
     <div>
-      <ForceAtlas2Control
+      <LayoutForceAtlas2Control
         settings={{
           slowDown: 10,
           strongGravityMode: true,
