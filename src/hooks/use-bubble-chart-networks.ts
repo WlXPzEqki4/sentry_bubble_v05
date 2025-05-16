@@ -10,7 +10,7 @@ export interface NetworkOption {
 
 export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclassified') => {
   const [networkOptions, setNetworkOptions] = useState<NetworkOption[]>([]);
-  const [selectedNetwork, setSelectedNetwork] = useState<string>('');
+  const [selectedNetwork, setSelectedNetwork] = useState<string>('romeo-and-juliet-network');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -59,7 +59,7 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
         
         setNetworkOptions(filteredNetworks);
         
-        // Set default selected network
+        // Set default selected network if none is selected
         if (filteredNetworks.length > 0 && !selectedNetwork) {
           setSelectedNetwork(filteredNetworks[0].id);
         }

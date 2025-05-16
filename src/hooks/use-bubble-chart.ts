@@ -36,9 +36,7 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
       setError(null);
 
       try {
-        let mockData: GraphData;
-        
-        // Romeo and Juliet character network data
+        // Romeo and Juliet character network data based on the images provided
         const romeoAndJulietData: GraphData = {
           nodes: [
             { id: 1, label: 'Romeo', family: 'Montague', size: 15 },
@@ -56,6 +54,10 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
             { id: 13, label: 'Peter', family: 'Capulet', size: 5 },
             { id: 14, label: 'Sampson', family: 'Capulet', size: 6 },
             { id: 15, label: 'Gregory', family: 'Capulet', size: 6 },
+            { id: 16, label: 'Balthasar', family: 'Montague', size: 7 },
+            { id: 17, label: 'Abram', family: 'Montague', size: 6 },
+            { id: 18, label: 'Prince Escalus', family: 'Neutral', size: 11 },
+            { id: 19, label: 'Friar John', family: 'Neutral', size: 7 }
           ],
           edges: [
             { source: 1, target: 2, weight: 10 },
@@ -70,6 +72,14 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
             { source: 6, target: 4, weight: 4 },
             { source: 6, target: 7, weight: 9 },
             { source: 7, target: 12, weight: 5 },
+            { source: 5, target: 17, weight: 3 },
+            { source: 3, target: 18, weight: 2 },
+            { source: 10, target: 19, weight: 3 },
+            { source: 9, target: 1, weight: 4 },
+            { source: 8, target: 1, weight: 3 },
+            { source: 1, target: 16, weight: 3 },
+            { source: 14, target: 15, weight: 2 },
+            { source: 4, target: 13, weight: 1 }
           ]
         };
         
@@ -151,6 +161,7 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
         };
 
         // Select data based on network ID
+        let mockData: GraphData;
         switch(networkId) {
           case 'terrorist-network':
             mockData = intelligenceNetworkData;
