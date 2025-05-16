@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { forceSimulation, forceManyBody, forceCenter, forceLink, forceCollide, SimulationNodeDatum, SimulationLinkDatum } from 'd3-force';
@@ -33,44 +32,31 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
   const simulationRef = useRef<any>(null);
   const nodesRef = useRef<Node[]>([]);
   const edgesRef = useRef<Edge[]>([]);
-  const isMounted = useRef<boolean>(true);
 
   // Function to set up the force simulation
   const setupForceSimulation = (nodes: Node[], edges: Edge[]) => {
-    // Stop any existing simulation first
-    if (simulationRef.current) {
-      simulationRef.current.stop();
-      simulationRef.current = null;
-    }
-
     // Store references to nodes and edges
     nodesRef.current = nodes;
     edgesRef.current = edges;
 
     // Create force simulation
-    const simulation = forceSimulation(nodes)
+    simulationRef.current = forceSimulation(nodes)
       .force('charge', forceManyBody().strength(-200))
       .force('center', forceCenter(0.5, 0.5))
       .force('collision', forceCollide().radius((d: any) => (d.size || 5) / 10 + 0.1))
       .force('link', forceLink(edges).id((d: any) => d.id).strength((d: any) => d.weight / 10))
       .on('tick', () => {
-        // Only update if component is still mounted
-        if (isMounted.current) {
-          // Create a new object to avoid reference issues
-          setGraphData({
-            nodes: [...nodes],
-            edges: [...edges]
-          });
-        }
+        // Update the graph data on each tick of the simulation
+        setGraphData({
+          nodes: [...nodes],
+          edges: [...edges]
+        });
       });
-
-    // Store simulation reference
-    simulationRef.current = simulation;
 
     // Run the simulation for a few ticks to get initial positions
     simulationRef.current.tick(10);
 
-    return simulation;
+    return simulationRef.current;
   };
 
   // Restart simulation when dragging a node
@@ -87,11 +73,7 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
       // Update node position
       node.fx = x;
       node.fy = y;
-      
-      // Only restart simulation if mounted
-      if (isMounted.current) {
-        restartSimulation();
-      }
+      restartSimulation();
     }
   };
 
@@ -102,18 +84,11 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
       // Release fixed position to let simulation take over again
       node.fx = null;
       node.fy = null;
-      
-      // Only restart simulation if mounted
-      if (isMounted.current) {
-        restartSimulation();
-      }
+      restartSimulation();
     }
   };
 
   useEffect(() => {
-    // Set isMounted ref to true on mount
-    isMounted.current = true;
-    
     if (!networkId) {
       setGraphData(null);
       setIsLoading(false);
@@ -121,8 +96,6 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
     }
 
     const fetchNetworkData = async () => {
-      if (!isMounted.current) return;
-      
       setIsLoading(true);
       setError(null);
 
@@ -143,11 +116,8 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
 
         if (edgesError) throw edgesError;
 
-        // Check if component is still mounted before continuing
-        if (!isMounted.current) return;
-
         // Process nodes to match our Node interface
-        const processedNodes: Node[] = nodesData?.map((node: any) => {
+        const processedNodes: Node[] = nodesData.map((node: any) => {
           // Parse properties if they are a string
           const properties = typeof node.properties === 'string' 
             ? JSON.parse(node.properties) 
@@ -161,10 +131,10 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
             fx: null,
             fy: null
           };
-        }) || [];
+        });
 
         // Process edges to match our Edge interface
-        const processedEdges: Edge[] = edgesData?.map((edge: any) => {
+        const processedEdges: Edge[] = edgesData.map((edge: any) => {
           // Parse properties if they are a string
           const properties = typeof edge.properties === 'string'
             ? JSON.parse(edge.properties)
@@ -175,19 +145,18 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
             target: parseInt(edge.target),
             weight: properties?.weight || 1,
           };
-        }) || [];
+        });
 
         // If we have data from Supabase, use it
-        if (processedNodes.length > 0 && isMounted.current) {
-          setupForceSimulation(processedNodes, processedEdges);
+        if (processedNodes.length > 0) {
+          const simulation = setupForceSimulation(processedNodes, processedEdges);
           
           // Set graph data with processed data
           setGraphData({
             nodes: processedNodes,
             edges: processedEdges
           });
-          setIsLoading(false);
-        } else if (isMounted.current) {
+        } else {
           // Fall back to mock data if no data in Supabase
           // Romeo and Juliet character network data based on the images provided
           const romeoAndJulietData: GraphData = {
@@ -330,44 +299,26 @@ export const useBubbleChart = (networkId: string, userClassificationLevel: strin
           }
           
           // Add a slight delay to simulate API call
-          const timeoutId = setTimeout(() => {
-            // Check if component is still mounted
-            if (isMounted.current) {
-              setupForceSimulation(mockData.nodes, mockData.edges);
-              setGraphData(mockData);
-              setIsLoading(false);
-            }
+          setTimeout(() => {
+            setupForceSimulation(mockData.nodes, mockData.edges);
+            setGraphData(mockData);
+            setIsLoading(false);
           }, 500);
-          
-          // Clean up timeout if component unmounts
-          return () => clearTimeout(timeoutId);
         }
       } catch (error) {
         console.error('Error fetching network data:', error);
-        // Only set error state if component is still mounted
-        if (isMounted.current) {
-          setError(error instanceof Error ? error : new Error('Failed to fetch network data'));
-          setIsLoading(false);
-        }
+        setError(error instanceof Error ? error : new Error('Failed to fetch network data'));
+        setIsLoading(false);
       }
     };
 
     fetchNetworkData();
 
-    // Clean up function when component unmounts or networkId changes
+    // Clean up simulation when component unmounts or networkId changes
     return () => {
-      // Mark component as unmounted
-      isMounted.current = false;
-      
-      // Stop any ongoing simulation to prevent memory leaks
       if (simulationRef.current) {
         simulationRef.current.stop();
-        simulationRef.current = null;
       }
-      
-      // Clear references to prevent memory leaks
-      nodesRef.current = [];
-      edgesRef.current = [];
     };
   }, [networkId, userClassificationLevel]);
 
