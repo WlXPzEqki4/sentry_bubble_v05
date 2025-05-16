@@ -115,10 +115,31 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     
     // Add drag events
     sigma.getMouseCaptor().on("mousedown", (e) => {
-      const nodeAtPosition = sigma.getNodeAtPosition(e.x, e.y);
-      if (nodeAtPosition) {
+      // Instead of using getNodeAtPosition directly, use renderer to find node
+      const renderer = sigma.getRenderer();
+      const mousePosition = sigma.viewportToGraph(e);
+      let closestNode: string | null = null;
+      let minDistance = Infinity;
+      
+      // Find the closest node to mouse position
+      graph.forEachNode((nodeId) => {
+        const attributes = graph.getNodeAttributes(nodeId);
+        const dx = attributes.x - mousePosition.x;
+        const dy = attributes.y - mousePosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Adjust the hit radius based on node size
+        const hitRadius = attributes.size / 10 + 0.02;
+        
+        if (distance < minDistance && distance < hitRadius) {
+          minDistance = distance;
+          closestNode = nodeId;
+        }
+      });
+      
+      if (closestNode) {
         setIsDragging(true);
-        setDraggedNode(nodeAtPosition);
+        setDraggedNode(closestNode);
         // Prevent the camera from moving while dragging
         e.preventSigmaDefault();
         e.original.preventDefault();
@@ -129,7 +150,8 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     sigma.getMouseCaptor().on("mousemove", (e) => {
       if (isDragging && draggedNode && handleNodeDrag) {
         const camera = sigma.getCamera();
-        const pos = camera.viewportToGraph({x: e.x, y: e.y});
+        // Use correct method to convert viewport to graph coordinates
+        const pos = sigma.viewportToGraphCoordinates(e.x, e.y);
         
         // Update node position in graph
         graph.setNodeAttribute(draggedNode, "x", pos.x);
