@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BubbleChartNetworkSelector from './BubbleChartNetworkSelector';
 import BubbleChartVisualization from './BubbleChartVisualization';
 import { useBubbleChartNetworks } from '@/hooks/use-bubble-chart-networks';
@@ -17,15 +18,35 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
     error: networksError
   } = useBubbleChartNetworks(userClassificationLevel);
 
-  // Display user classification level in console for debugging
-  React.useEffect(() => {
-    console.log(`BubbleChartTab - User classification level: ${userClassificationLevel}`);
-    console.log(`Available network options: ${networkOptions.length}`);
+  // Enhanced function to handle tab changes without scrolling
+  const handleTabChange = (value: string) => {
+    // Immediately prevent any scrolling
+    window.scrollTo({
+      top: 0,
+      behavior: 'instant'
+    });
     
-    if (networkOptions.length > 0) {
-      console.log(`Available networks:`, networkOptions.map(n => n.name).join(', '));
-    }
-  }, [userClassificationLevel, networkOptions]);
+    // Also apply after a short timeout to catch delayed scrolling
+    setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'instant'
+      });
+    }, 10);
+  };
+  
+  // Add an effect to maintain scroll position
+  useEffect(() => {
+    const maintainScrollPosition = () => {
+      window.scrollTo(0, 0);
+    };
+    
+    // Run on mount
+    maintainScrollPosition();
+    
+    // Return cleanup function
+    return () => {};
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -48,11 +69,6 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
       {networksError ? (
         <div className="p-8 text-center">
           <p className="text-red-500">Error loading networks: {networksError.message}</p>
-        </div>
-      ) : networkOptions.length === 0 && !networksLoading ? (
-        <div className="p-8 text-center bg-gray-50 rounded-lg">
-          <p className="text-gray-600">No networks available for your classification level ({userClassificationLevel}).</p>
-          <p className="text-sm text-gray-500 mt-2">Network data is currently using demo visualization only.</p>
         </div>
       ) : (
         <BubbleChartVisualization 

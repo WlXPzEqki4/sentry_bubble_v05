@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 export interface NetworkOption {
   id: string;
@@ -20,90 +21,57 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
       setError(null);
 
       try {
-        // Using mock data since the tables don't exist in the database types
+        // In a real implementation, we would filter by classification level
+        // For now, creating a mock response with sample networks
+        // This would be replaced with a real Supabase query when the table is created
+        
+        // Simulating a Supabase response for development until the table exists
         const mockNetworks: NetworkOption[] = [
           {
-            id: '00000000-0000-0000-0000-000000000001',
+            id: 'terrorist-network',
             name: 'Terrorist Network Analysis',
             description: 'Analysis of terrorist network connections and communities',
             classification_level: 'secret',
           },
           {
-            id: '00000000-0000-0000-0000-000000000002',
+            id: 'criminal-network',
             name: 'Criminal Organization Structure',
             description: 'Mapping of criminal organization hierarchy and relationships',
             classification_level: 'unclassified',
           },
           {
-            id: '00000000-0000-0000-0000-000000000003',
+            id: 'intelligence-network',
             name: 'Intelligence Community Links',
             description: 'Connections between intelligence agencies and operatives',
             classification_level: 'top_secret',
           },
         ];
-        
-        // Parse the user's classification level into a normalized array
-        const userClassificationNormalized = userClassificationLevel.toLowerCase();
-        const hasTopSecret = userClassificationNormalized.includes('top') && userClassificationNormalized.includes('secret');
-        const hasSecret = userClassificationNormalized.includes('secret');
-        
-        console.log(`User classification levels parsed:`, {
-          original: userClassificationLevel,
-          normalized: userClassificationNormalized,
-          hasTopSecret,
-          hasSecret
-        });
-        
+
         // Filter networks based on user classification level
         const filteredNetworks = mockNetworks.filter(network => {
-          const networkLevel = network.classification_level.toLowerCase().replace(/[_\s-]+/g, '');
-          console.log(`Checking network: ${network.name}, Class: ${networkLevel}`);
-          
-          // If user has top secret clearance, they can see everything
-          if (hasTopSecret) {
-            return true;
-          }
-          
-          // If network is top secret and user doesn't have top secret clearance, filter it out
-          if (networkLevel === 'topsecret' || networkLevel === 'top_secret' || networkLevel === 'top-secret') {
-            return false;
-          }
-          
-          // If user has secret clearance, they can see secret and unclassified
-          if (hasSecret) {
-            return true;
-          }
-          
-          // Otherwise, user can only see unclassified
-          return networkLevel === 'unclassified';
+          // Simple classification hierarchy check
+          if (userClassificationLevel === 'top_secret') return true;
+          if (userClassificationLevel === 'secret' && network.classification_level !== 'top_secret') return true;
+          if (userClassificationLevel === 'unclassified' && network.classification_level === 'unclassified') return true;
+          return false;
         });
-        
-        console.log(`Filtered networks: ${filteredNetworks.length}`);
         
         setNetworkOptions(filteredNetworks);
         
-        // Set default selected network if we have options and nothing is currently selected
+        // Set default selected network
         if (filteredNetworks.length > 0 && !selectedNetwork) {
           setSelectedNetwork(filteredNetworks[0].id);
-        } else if (filteredNetworks.length === 0) {
-          // Reset selected network if there are no available networks
-          setSelectedNetwork('');
         }
       } catch (error) {
-        console.error('Error preparing network options:', error);
-        setError(error instanceof Error ? error : new Error('Failed to prepare networks'));
+        console.error('Error fetching network options:', error);
+        setError(error instanceof Error ? error : new Error('Failed to fetch networks'));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchNetworks();
-  }, [userClassificationLevel, selectedNetwork]);
-
-  useEffect(() => {
-    // Show notification that we're using demo data
-    toast.info('Using demo network visualization data');
-  }, []);
+  }, [userClassificationLevel]); // Re-fetch when user classification level changes
 
   return {
     networkOptions,

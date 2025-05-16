@@ -6,10 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 
 interface BubbleChartNodeDetailsProps {
-  node: {
-    id: string;
-    data: any;
-  };
+  node: any;
   onClose: () => void;
 }
 
@@ -70,9 +67,7 @@ const BubbleChartNodeDetails: React.FC<BubbleChartNodeDetailsProps> = ({ node, o
           <p className="text-xs font-mono text-gray-500 mt-1">{node.id}</p>
         </div>
         
-        {data.originalData && Object.entries(data.originalData).filter(([key]) => 
-          !['label', 'size', 'community', 'description', 'color'].includes(key)
-        ).map(([key, value]) => (
+        {data.additionalData && Object.entries(data.additionalData).map(([key, value]) => (
           <div key={key}>
             <p className="text-sm text-gray-500">{key.charAt(0).toUpperCase() + key.slice(1)}</p>
             <p className="text-sm mt-1">{String(value)}</p>
