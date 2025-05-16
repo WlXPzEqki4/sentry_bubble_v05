@@ -21,7 +21,6 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
-  const [containerReady, setContainerReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { nodes, edges, isLoading, error } = useBubbleChart(selectedNetwork, userClassificationLevel);
@@ -45,37 +44,6 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
   const resetSearch = () => {
     setSearchTerm('');
   };
-
-  // Check if the container is ready and has dimensions
-  useEffect(() => {
-    if (containerRef.current) {
-      const checkContainer = () => {
-        const container = containerRef.current;
-        if (container && container.offsetHeight > 0) {
-          setContainerReady(true);
-        } else {
-          setContainerReady(false);
-        }
-      };
-      
-      // Initial check
-      checkContainer();
-      
-      // Set up a resize observer to monitor container changes
-      const resizeObserver = new ResizeObserver(() => {
-        checkContainer();
-      });
-      
-      resizeObserver.observe(containerRef.current);
-      
-      return () => {
-        if (containerRef.current) {
-          resizeObserver.unobserve(containerRef.current);
-        }
-        resizeObserver.disconnect();
-      };
-    }
-  }, []);
 
   // Add global CSS for Sigma.js
   useEffect(() => {
@@ -137,7 +105,7 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
               <div className="h-full w-full flex items-center justify-center">
                 <p className="text-gray-500">No data available for this network.</p>
               </div>
-            ) : containerReady ? (
+            ) : (
               <SigmaContainer
                 style={{ height: "100%", width: "100%" }}
                 settings={{
@@ -162,10 +130,6 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
                 </ControlsContainer>
                 <ForceAtlasControl />
               </SigmaContainer>
-            ) : (
-              <div className="h-full w-full flex items-center justify-center">
-                <p className="text-gray-500">Preparing visualization...</p>
-              </div>
             )}
           </div>
           
