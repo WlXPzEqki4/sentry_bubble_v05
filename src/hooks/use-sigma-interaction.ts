@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Sigma } from "sigma";
 import Graph from "graphology";
+import { MousePointerClick, Grab, GrabIcon, Hand, Move } from 'lucide-react';
 
 interface UseSigmaInteractionProps {
   sigmaRef: React.MutableRefObject<Sigma | null>;
