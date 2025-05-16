@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Sigma } from "sigma";
 import Graph from "graphology";
@@ -44,208 +45,234 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   useEffect(() => {
     if (!graphData || !graphData.nodes || !containerRef.current) return;
     
-    // Create a new graph instance
-    const graph = new Graph();
-    graphRef.current = graph;
+    let graph: Graph | null = null;
+    let sigma: Sigma | null = null;
     
-    // Add nodes to graph
-    graphData.nodes.forEach((node: any) => {
-      graph.addNode(node.id.toString(), {
-        ...node,
-        size: node.size || 5,
-        label: node.label,
-        color: getFamilyColor(node.family),
-        x: node.x ?? Math.random(),
-        y: node.y ?? Math.random()
-      });
-    });
-
-    // Add edges to graph
-    graphData.edges.forEach((edge: any) => {
-      const sourceId = typeof edge.source === 'object' ? edge.source.id.toString() : edge.source.toString();
-      const targetId = typeof edge.target === 'object' ? edge.target.id.toString() : edge.target.toString();
+    try {
+      // Create a new graph instance
+      graph = new Graph();
+      graphRef.current = graph;
       
-      if (graph.hasNode(sourceId) && graph.hasNode(targetId)) {
-        graph.addEdge(
-          sourceId,
-          targetId, 
-          {
-            weight: edge.weight,
-            size: edge.weight / 2,
-            color: "#aaa"
-          }
-        );
-      }
-    });
-    
-    // Initialize sigma with fixed settings
-    const sigma = new Sigma(graph, containerRef.current, {
-      defaultNodeColor: "#9b87f5",
-      defaultEdgeColor: "#eee",
-      labelColor: { attribute: "color" },
-      labelSize: 14,
-      renderEdgeLabels: false
-    });
-    
-    sigmaRef.current = sigma;
-    
-    // Add click event listeners
-    sigma.on("clickNode", (event) => {
-      // Only register clicks when not dragging
-      if (!isDragging && !draggedNode) {
-        const nodeId = event.node;
-        const nodeAttributes = graph.getNodeAttributes(nodeId);
-        onNodeClick({ 
-          id: nodeId, 
-          data: nodeAttributes 
+      // Add nodes to graph
+      graphData.nodes.forEach((node: any) => {
+        graph?.addNode(node.id.toString(), {
+          ...node,
+          size: node.size || 5,
+          label: node.label,
+          color: getFamilyColor(node.family),
+          x: node.x ?? Math.random(),
+          y: node.y ?? Math.random()
         });
-      }
-    });
+      });
 
-    sigma.on("enterNode", (event) => {
-      setHoveredNode(event.node);
-      graph.setNodeAttribute(event.node, "hovered", true);
-      sigma.refresh();
-    });
-
-    sigma.on("leaveNode", (event) => {
-      setHoveredNode(null);
-      graph.setNodeAttribute(event.node, "hovered", false);
-      sigma.refresh();
-    });
-    
-    // Node drag detection and handling
-    const mousedownHandler = (event: any) => {
-      const sigma = sigmaRef.current;
-      const graph = graphRef.current;
-      
-      if (!sigma || !graph || isDragging) return;
-      
-      // Get mouse position in sigma coordinates
-      const mouseX = event.x;
-      const mouseY = event.y;
-      
-      // Find node under cursor
-      let closestNode = null;
-      let minDistance = Infinity;
-      
-      graph.forEachNode((nodeId) => {
-        const nodeAttrs = graph.getNodeAttributes(nodeId);
-        const nodePosition = sigma.graphToViewport(nodeAttrs.x, nodeAttrs.y);
+      // Add edges to graph
+      graphData.edges.forEach((edge: any) => {
+        const sourceId = typeof edge.source === 'object' ? edge.source.id.toString() : edge.source.toString();
+        const targetId = typeof edge.target === 'object' ? edge.target.id.toString() : edge.target.toString();
         
-        // Calculate distance from mouse to node
-        const dx = nodePosition.x - mouseX;
-        const dy = nodePosition.y - mouseY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        // Adjust hit radius based on node size and camera zoom
-        const camera = sigma.getCamera();
-        const nodeSize = nodeAttrs.size || 5;
-        const hitRadius = nodeSize * camera.ratio * 2; // Make the hit area larger
-        
-        if (distance < hitRadius && distance < minDistance) {
-          closestNode = nodeId;
-          minDistance = distance;
+        if (graph?.hasNode(sourceId) && graph?.hasNode(targetId)) {
+          graph.addEdge(
+            sourceId,
+            targetId, 
+            {
+              weight: edge.weight,
+              size: edge.weight / 2,
+              color: "#aaa"
+            }
+          );
         }
       });
       
-      if (closestNode) {
-        // Start dragging
-        setDraggedNode(closestNode);
-        setIsDragging(true);
+      // Initialize sigma with fixed settings
+      sigma = new Sigma(graph, containerRef.current, {
+        defaultNodeColor: "#9b87f5",
+        defaultEdgeColor: "#eee",
+        labelColor: { attribute: "color" },
+        labelSize: 14,
+        renderEdgeLabels: false
+      });
+      
+      sigmaRef.current = sigma;
+      
+      // Add event handlers - storing references to the handlers
+      const handleNodeEnter = (event: any) => {
+        setHoveredNode(event.node);
+        graph?.setNodeAttribute(event.node, "hovered", true);
+        sigma?.refresh();
+      };
+      
+      const handleNodeLeave = (event: any) => {
+        setHoveredNode(null);
+        graph?.setNodeAttribute(event.node, "hovered", false);
+        sigma?.refresh();
+      };
+      
+      const handleNodeClick = (event: any) => {
+        // Only register clicks when not dragging
+        if (!isDragging && !draggedNode) {
+          const nodeId = event.node;
+          const nodeAttributes = graph?.getNodeAttributes(nodeId);
+          onNodeClick({ 
+            id: nodeId, 
+            data: nodeAttributes 
+          });
+        }
+      };
+      
+      // Add event listeners
+      sigma.on("enterNode", handleNodeEnter);
+      sigma.on("leaveNode", handleNodeLeave);
+      sigma.on("clickNode", handleNodeClick);
+      
+      // Handle node dragging
+      const mouseCaptor = sigma.getMouseCaptor();
+      
+      // Create handler functions
+      const mousedownHandler = (event: any) => {
+        if (!sigma || !graph || isDragging) return;
         
-        // Store starting position for reference
-        const nodeAttrs = graph.getNodeAttributes(closestNode);
-        dragStartPositionRef.current = { x: nodeAttrs.x, y: nodeAttrs.y };
+        // Get mouse position in sigma coordinates
+        const mouseX = event.x;
+        const mouseY = event.y;
         
-        // Prevent camera panning while dragging
+        // Find node under cursor
+        let closestNode = null;
+        let minDistance = Infinity;
+        
+        graph.forEachNode((nodeId) => {
+          const nodeAttrs = graph?.getNodeAttributes(nodeId);
+          const nodePosition = sigma?.graphToViewport(nodeAttrs.x, nodeAttrs.y);
+          
+          if (!nodePosition) return;
+          
+          // Calculate distance from mouse to node
+          const dx = nodePosition.x - mouseX;
+          const dy = nodePosition.y - mouseY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // Adjust hit radius based on node size and camera zoom
+          const camera = sigma.getCamera();
+          const nodeSize = nodeAttrs.size || 5;
+          const hitRadius = nodeSize * camera.ratio * 2; // Make the hit area larger
+          
+          if (distance < hitRadius && distance < minDistance) {
+            closestNode = nodeId;
+            minDistance = distance;
+          }
+        });
+        
+        if (closestNode) {
+          // Start dragging
+          setDraggedNode(closestNode);
+          setIsDragging(true);
+          
+          // Store starting position for reference
+          const nodeAttrs = graph.getNodeAttributes(closestNode);
+          dragStartPositionRef.current = { x: nodeAttrs.x, y: nodeAttrs.y };
+          
+          // Prevent camera panning while dragging
+          event.preventSigmaDefault();
+          event.original.preventDefault();
+          event.original.stopPropagation();
+        }
+      };
+      
+      const mousemoveHandler = (event: any) => {
+        if (!sigma || !graph || !isDragging || !draggedNode || !handleNodeDrag) return;
+        
+        // Get camera state for coordinate conversion
+        const camera = sigma.getCamera();
+        const cameraState = camera.getState();
+        
+        // Convert viewport coordinates to graph coordinates
+        const graphX = (event.x - cameraState.x) / cameraState.ratio;
+        const graphY = (event.y - cameraState.y) / cameraState.ratio;
+        
+        // Update node position in graph
+        graph.setNodeAttribute(draggedNode, "x", graphX);
+        graph.setNodeAttribute(draggedNode, "y", graphY);
+        
+        // Call external handler
+        handleNodeDrag(draggedNode, graphX, graphY);
+        
+        // Prevent camera panning during drag
         event.preventSigmaDefault();
         event.original.preventDefault();
         event.original.stopPropagation();
+        
+        // Refresh the rendering
+        sigma.refresh();
+      };
+      
+      const mouseupHandler = (event: any) => {
+        if (isDragging && draggedNode && handleNodeDragEnd) {
+          handleNodeDragEnd(draggedNode);
+        }
+        
+        // Reset drag state
+        setIsDragging(false);
+        setDraggedNode(null);
+        dragStartPositionRef.current = null;
+      };
+      
+      // Handle case when mouse leaves the container
+      const mouseleaveHandler = (event: any) => {
+        if (isDragging && draggedNode && handleNodeDragEnd) {
+          handleNodeDragEnd(draggedNode);
+        }
+        
+        // Reset drag state
+        setIsDragging(false);
+        setDraggedNode(null);
+        dragStartPositionRef.current = null;
+      };
+      
+      // Attach event handlers to sigma's mouse captor
+      mouseCaptor.on("mousedown", mousedownHandler);
+      mouseCaptor.on("mousemove", mousemoveHandler);
+      mouseCaptor.on("mouseup", mouseupHandler);
+      mouseCaptor.on("mouseleave", mouseleaveHandler);
+      
+      // Position camera initially
+      sigma.getCamera().animate({
+        x: 0.5,
+        y: 0.5,
+        ratio: 1.2
+      });
+      
+      // Cleanup function - ensure we properly clean up ALL event listeners
+      return () => {
+        // Remove all event handlers to prevent memory leaks
+        if (sigma) {
+          sigma.removeListener("enterNode", handleNodeEnter);
+          sigma.removeListener("leaveNode", handleNodeLeave);
+          sigma.removeListener("clickNode", handleNodeClick);
+          
+          const mouseCaptor = sigma.getMouseCaptor();
+          mouseCaptor.off("mousedown", mousedownHandler);
+          mouseCaptor.off("mousemove", mousemoveHandler);
+          mouseCaptor.off("mouseup", mouseupHandler); 
+          mouseCaptor.off("mouseleave", mouseleaveHandler);
+          
+          // Kill sigma instance properly
+          sigma.kill();
+          sigmaRef.current = null;
+        }
+        
+        // Clear graph reference
+        graphRef.current = null;
+        graph = null;
+      };
+    } catch (error) {
+      console.error("Error initializing graph:", error);
+      // Clean up partial initializations on error
+      if (sigma) {
+        sigma.kill();
+        sigmaRef.current = null;
       }
-    };
-    
-    const mousemoveHandler = (event: any) => {
-      const sigma = sigmaRef.current;
-      const graph = graphRef.current;
-      
-      if (!sigma || !graph || !isDragging || !draggedNode || !handleNodeDrag) return;
-      
-      // Get camera state for coordinate conversion
-      const camera = sigma.getCamera();
-      const cameraState = camera.getState();
-      
-      // Convert viewport coordinates to graph coordinates
-      const graphX = (event.x - cameraState.x) / cameraState.ratio;
-      const graphY = (event.y - cameraState.y) / cameraState.ratio;
-      
-      // Update node position in graph
-      graph.setNodeAttribute(draggedNode, "x", graphX);
-      graph.setNodeAttribute(draggedNode, "y", graphY);
-      
-      // Call external handler
-      handleNodeDrag(draggedNode, graphX, graphY);
-      
-      // Prevent camera panning during drag
-      event.preventSigmaDefault();
-      event.original.preventDefault();
-      event.original.stopPropagation();
-      
-      // Refresh the rendering
-      sigma.refresh();
-    };
-    
-    const mouseupHandler = (event: any) => {
-      if (isDragging && draggedNode && handleNodeDragEnd) {
-        handleNodeDragEnd(draggedNode);
-      }
-      
-      // Reset drag state
-      setIsDragging(false);
-      setDraggedNode(null);
-      dragStartPositionRef.current = null;
-    };
-    
-    // Handle case when mouse leaves the container
-    const mouseleaveHandler = (event: any) => {
-      if (isDragging && draggedNode && handleNodeDragEnd) {
-        handleNodeDragEnd(draggedNode);
-      }
-      
-      // Reset drag state
-      setIsDragging(false);
-      setDraggedNode(null);
-      dragStartPositionRef.current = null;
-    };
-    
-    // Attach event handlers to sigma's mouse captor
-    const mouseCaptor = sigma.getMouseCaptor();
-    mouseCaptor.on("mousedown", mousedownHandler);
-    mouseCaptor.on("mousemove", mousemoveHandler);
-    mouseCaptor.on("mouseup", mouseupHandler);
-    mouseCaptor.on("mouseleave", mouseleaveHandler);
-    
-    // Position camera initially
-    sigma.getCamera().animate({
-      x: 0.5,
-      y: 0.5,
-      ratio: 1.2
-    });
-    
-    // Cleanup function
-    return () => {
-      // Remove all event handlers
-      const mouseCaptor = sigma.getMouseCaptor();
-      mouseCaptor.off("mousedown", mousedownHandler);
-      mouseCaptor.off("mousemove", mousemoveHandler);
-      mouseCaptor.off("mouseup", mouseupHandler);
-      mouseCaptor.off("mouseleave", mouseleaveHandler);
-      
-      // Kill sigma instance
-      sigma.kill();
-      sigmaRef.current = null;
       graphRef.current = null;
-    };
+      graph = null;
+    }
   }, [graphData, onNodeClick, isDragging, draggedNode, handleNodeDrag, handleNodeDragEnd]);
   
   // Filter nodes based on search term
