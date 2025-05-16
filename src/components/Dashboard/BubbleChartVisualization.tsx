@@ -1,11 +1,12 @@
 
-import React, { useState, useCallback } from 'react';
-import { useNodesState, useEdgesState } from 'reactflow';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import BubbleChartNodeDetails from './BubbleChartNodeDetails';
-import BubbleChartFlow from './BubbleChartFlow';
 import { useBubbleChart } from '@/hooks/use-bubble-chart';
+import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } from "@react-sigma/core";
+import "@react-sigma/core/lib/react-sigma.min.css";
+import BubbleChartSigma from './BubbleChartSigma';
 
 interface BubbleChartVisualizationProps {
   selectedNetwork: string;
@@ -19,19 +20,14 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
 
-  const { nodes: initialNodes, edges: initialEdges, isLoading, error } = useBubbleChart(selectedNetwork, userClassificationLevel);
+  const { nodes, edges, isLoading, error } = useBubbleChart(selectedNetwork, userClassificationLevel);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  // Update nodes and edges when data changes
-  React.useEffect(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
-
-  const handleNodeClick = useCallback((event: React.MouseEvent, node: any) => {
-    setSelectedNode(node);
+  const handleNodeClick = useCallback((nodeId: string, attributes: any) => {
+    console.log("Node clicked:", nodeId, attributes);
+    setSelectedNode({
+      id: nodeId,
+      data: attributes
+    });
   }, []);
 
   const resetSelectedNode = () => {
@@ -58,22 +54,49 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
     );
   }
 
+  if (isLoading) {
+    return (
+      <Card className="mt-4">
+        <CardContent className="p-6">
+          <Skeleton className="h-[400px] w-full rounded-md" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mt-4">
       <CardContent className="p-0">
         <div className="flex flex-col md:flex-row">
           <div className={`flex-grow ${selectedNode ? 'w-2/3' : 'w-full'}`} style={{ height: '70vh' }}>
-            <BubbleChartFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onNodeClick={handleNodeClick}
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
-              resetSearch={resetSearch}
-              isLoading={isLoading}
-            />
+            {nodes.length === 0 ? (
+              <div className="h-full w-full flex items-center justify-center">
+                <p className="text-gray-500">No data available for this network.</p>
+              </div>
+            ) : (
+              <SigmaContainer
+                style={{ height: "100%", width: "100%" }}
+                settings={{
+                  nodeProgramClasses: {},
+                  defaultNodeColor: "#6366F1",
+                  defaultEdgeColor: "#e0e0e0",
+                  labelDensity: 0.07,
+                  labelGridCellSize: 60,
+                  labelRenderedSizeThreshold: 6
+                }}
+              >
+                <BubbleChartSigma 
+                  nodes={nodes}
+                  edges={edges}
+                  searchTerm={searchTerm}
+                  onNodeClick={handleNodeClick}
+                />
+                <ControlsContainer position={"bottom-right"}>
+                  <ZoomControl />
+                  <FullScreenControl />
+                </ControlsContainer>
+              </SigmaContainer>
+            )}
           </div>
           
           {selectedNode && (
