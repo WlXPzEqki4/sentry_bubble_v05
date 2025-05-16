@@ -1,17 +1,43 @@
 
 /**
- * Check if a user has access to a network based on their classification level
+ * Check if a user can access a specific network based on classification levels
  */
-export const canAccessNetwork = (userClassificationLevel: string, networkClassification: string): boolean => {
-  const levels = ['unclassified', 'secret', 'top_secret'];
+export const canAccessNetwork = (userClassificationLevel: string, networkClassificationLevel: string): boolean => {
+  const normalizedUser = normalizeClassification(userClassificationLevel);
+  const normalizedNetwork = normalizeClassification(networkClassificationLevel);
+
+  // Users with top secret clearance can access all networks
+  if (normalizedUser.includes('topsecret')) {
+    return true;
+  }
+
+  // Networks requiring top secret cannot be accessed without top secret clearance
+  if (normalizedNetwork === 'topsecret') {
+    return false;
+  }
+
+  // Users with secret clearance can access secret and unclassified networks
+  if (normalizedUser.includes('secret')) {
+    return normalizedNetwork !== 'topsecret';
+  }
+
+  // Users with only unclassified clearance can only access unclassified networks
+  return normalizedNetwork === 'unclassified';
+};
+
+/**
+ * Normalize classification string for consistent comparison
+ */
+export const normalizeClassification = (classification: string): string => {
+  if (!classification) return 'unclassified';
   
-  // User might have multiple clearance levels
-  const userLevels = userClassificationLevel.toLowerCase().split(',').map(level => level.trim());
+  // Convert to lowercase and remove spaces, dashes, and underscores
+  const normalized = classification.toLowerCase().replace(/[_\s-]+/g, '');
   
-  // Check if user has sufficient clearance for the network
-  return userLevels.some(userLevel => {
-    const userIndex = levels.indexOf(userLevel);
-    const networkIndex = levels.indexOf(networkClassification.toLowerCase());
-    return userIndex >= networkIndex && userIndex !== -1 && networkIndex !== -1;
-  });
+  // Handle special case of "top secret" which gets split by the replace above
+  if (normalized.includes('top') && normalized.includes('secret')) {
+    return 'topsecret';
+  }
+  
+  return normalized;
 };

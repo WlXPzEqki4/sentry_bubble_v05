@@ -42,10 +42,17 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
           },
         ];
         
-        // Improved logic to handle compound classification levels
-        // Parse the user's classification level into an array
-        const userLevels = userClassificationLevel.toLowerCase().split(/[,\s]+/).filter(Boolean);
-        console.log(`User classification levels parsed:`, userLevels);
+        // Parse the user's classification level into a normalized array
+        const userClassificationNormalized = userClassificationLevel.toLowerCase();
+        const hasTopSecret = userClassificationNormalized.includes('top') && userClassificationNormalized.includes('secret');
+        const hasSecret = userClassificationNormalized.includes('secret');
+        
+        console.log(`User classification levels parsed:`, {
+          original: userClassificationLevel,
+          normalized: userClassificationNormalized,
+          hasTopSecret,
+          hasSecret
+        });
         
         // Filter networks based on user classification level
         const filteredNetworks = mockNetworks.filter(network => {
@@ -53,7 +60,7 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
           console.log(`Checking network: ${network.name}, Class: ${networkLevel}`);
           
           // If user has top secret clearance, they can see everything
-          if (userLevels.includes('topsecret') || userLevels.includes('top_secret') || userLevels.includes('top-secret')) {
+          if (hasTopSecret) {
             return true;
           }
           
@@ -63,7 +70,7 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
           }
           
           // If user has secret clearance, they can see secret and unclassified
-          if (userLevels.includes('secret')) {
+          if (hasSecret) {
             return true;
           }
           
@@ -78,6 +85,9 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
         // Set default selected network if we have options and nothing is currently selected
         if (filteredNetworks.length > 0 && !selectedNetwork) {
           setSelectedNetwork(filteredNetworks[0].id);
+        } else if (filteredNetworks.length === 0) {
+          // Reset selected network if there are no available networks
+          setSelectedNetwork('');
         }
       } catch (error) {
         console.error('Error preparing network options:', error);

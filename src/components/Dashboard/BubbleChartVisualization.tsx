@@ -7,6 +7,7 @@ import { useBubbleChart } from '@/hooks/use-bubble-chart';
 import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } from "@react-sigma/core";
 import BubbleChartSigma from './BubbleChartSigma';
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface BubbleChartVisualizationProps {
   selectedNetwork: string;
@@ -19,8 +20,14 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
 }) => {
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [sigmaKey, setSigmaKey] = useState<string>(`${selectedNetwork}-${Date.now()}`);
 
   const { nodes, edges, isLoading, error } = useBubbleChart(selectedNetwork, userClassificationLevel);
+
+  // When the selected network changes, update the key to re-render the sigma container
+  useEffect(() => {
+    setSigmaKey(`sigma-${selectedNetwork}-${Date.now()}`);
+  }, [selectedNetwork]);
 
   useEffect(() => {
     console.log("BubbleChartVisualization - Selected Network:", selectedNetwork);
@@ -57,7 +64,9 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
       <Card className="mt-4">
         <CardContent className="p-6">
           <div className="p-8 text-center">
-            <p className="text-red-500">Error loading network data: {error.message}</p>
+            <Alert variant="destructive">
+              <AlertDescription>Error loading network data: {error.message}</AlertDescription>
+            </Alert>
           </div>
         </CardContent>
       </Card>
@@ -90,7 +99,7 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
             ) : (
               <div className="h-full w-full relative" data-testid="sigma-container">
                 <SigmaContainer
-                  key={`sigma-container-${selectedNetwork}-${nodes.length}`}
+                  key={sigmaKey}
                   style={{ height: "100%", width: "100%" }}
                   settings={{
                     defaultNodeColor: "#6366F1",
