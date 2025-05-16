@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { Sigma } from "sigma";
 import Graph from "graphology";
@@ -39,6 +38,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
+  const dragStartPositionRef = useRef<{x: number, y: number} | null>(null);
   
   // Initialize the graph when component mounts or data changes
   useEffect(() => {
@@ -115,85 +115,87 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
     });
     
     // Node drag detection and handling
-    const mousedownHandler = (e: any) => {
-      if (isDragging) return; // Prevent new drag while already dragging
+    const mousedownHandler = (event: any) => {
+      const sigma = sigmaRef.current;
+      const graph = graphRef.current;
       
-      // Get the camera for coordinate transformations
-      const camera = sigma.getCamera();
+      if (!sigma || !graph || isDragging) return;
       
-      // Mouse position in viewport coordinates
-      const mouseX = e.x;
-      const mouseY = e.y;
+      // Get mouse position in sigma coordinates
+      const mouseX = event.x;
+      const mouseY = event.y;
       
-      let closestNode: string | null = null;
+      // Find node under cursor
+      let closestNode = null;
       let minDistance = Infinity;
       
-      // Check each node to see if mouse is over it
       graph.forEachNode((nodeId) => {
-        const attrs = graph.getNodeAttributes(nodeId);
+        const nodeAttrs = graph.getNodeAttributes(nodeId);
+        const nodePosition = sigma.graphToViewport(nodeAttrs.x, nodeAttrs.y);
         
-        // Convert node position from graph to viewport coordinates
-        const nodePosition = sigma.graphToViewport(attrs.x, attrs.y);
-        
-        // Calculate distance from mouse to node center
+        // Calculate distance from mouse to node
         const dx = nodePosition.x - mouseX;
         const dy = nodePosition.y - mouseY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // Create a hit radius based on node size and camera zoom
-        const nodeSize = attrs.size || 5; 
-        const hitRadius = nodeSize * camera.ratio;
+        // Adjust hit radius based on node size and camera zoom
+        const camera = sigma.getCamera();
+        const nodeSize = nodeAttrs.size || 5;
+        const hitRadius = nodeSize * camera.ratio * 2; // Make the hit area larger
         
         if (distance < hitRadius && distance < minDistance) {
-          minDistance = distance;
           closestNode = nodeId;
+          minDistance = distance;
         }
       });
       
       if (closestNode) {
-        // We found a node to drag
+        // Start dragging
         setDraggedNode(closestNode);
         setIsDragging(true);
         
-        // Prevent camera movement during drag
-        e.preventSigmaDefault();
-        e.original.preventDefault();
-        e.original.stopPropagation();
+        // Store starting position for reference
+        const nodeAttrs = graph.getNodeAttributes(closestNode);
+        dragStartPositionRef.current = { x: nodeAttrs.x, y: nodeAttrs.y };
+        
+        // Prevent camera panning while dragging
+        event.preventSigmaDefault();
+        event.original.preventDefault();
+        event.original.stopPropagation();
       }
     };
-
-    const mousemoveHandler = (e: any) => {
-      if (!isDragging || !draggedNode || !handleNodeDrag) return;
+    
+    const mousemoveHandler = (event: any) => {
+      const sigma = sigmaRef.current;
+      const graph = graphRef.current;
       
+      if (!sigma || !graph || !isDragging || !draggedNode || !handleNodeDrag) return;
+      
+      // Get camera state for coordinate conversion
       const camera = sigma.getCamera();
-      
-      // Get current camera state for manual conversion
       const cameraState = camera.getState();
       
       // Convert viewport coordinates to graph coordinates
-      const viewportX = e.x;
-      const viewportY = e.y;
-      
-      // Manual conversion from viewport to graph coordinates
-      const graphX = (viewportX - cameraState.x) / cameraState.ratio;
-      const graphY = (viewportY - cameraState.y) / cameraState.ratio;
+      const graphX = (event.x - cameraState.x) / cameraState.ratio;
+      const graphY = (event.y - cameraState.y) / cameraState.ratio;
       
       // Update node position in graph
       graph.setNodeAttribute(draggedNode, "x", graphX);
       graph.setNodeAttribute(draggedNode, "y", graphY);
       
-      // Call the external handler
+      // Call external handler
       handleNodeDrag(draggedNode, graphX, graphY);
       
-      // Prevent camera movement during drag
-      e.preventSigmaDefault();
-      e.original.preventDefault();
-      e.original.stopPropagation();
+      // Prevent camera panning during drag
+      event.preventSigmaDefault();
+      event.original.preventDefault();
+      event.original.stopPropagation();
       
+      // Refresh the rendering
       sigma.refresh();
     };
-
-    const endDragHandler = () => {
+    
+    const mouseupHandler = (event: any) => {
       if (isDragging && draggedNode && handleNodeDragEnd) {
         handleNodeDragEnd(draggedNode);
       }
@@ -201,36 +203,51 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
       // Reset drag state
       setIsDragging(false);
       setDraggedNode(null);
+      dragStartPositionRef.current = null;
     };
-
-    // Attach event handlers
+    
+    // Handle case when mouse leaves the container
+    const mouseleaveHandler = (event: any) => {
+      if (isDragging && draggedNode && handleNodeDragEnd) {
+        handleNodeDragEnd(draggedNode);
+      }
+      
+      // Reset drag state
+      setIsDragging(false);
+      setDraggedNode(null);
+      dragStartPositionRef.current = null;
+    };
+    
+    // Attach event handlers to sigma's mouse captor
     const mouseCaptor = sigma.getMouseCaptor();
     mouseCaptor.on("mousedown", mousedownHandler);
     mouseCaptor.on("mousemove", mousemoveHandler);
-    mouseCaptor.on("mouseup", endDragHandler);
-    mouseCaptor.on("mouseleave", endDragHandler);
+    mouseCaptor.on("mouseup", mouseupHandler);
+    mouseCaptor.on("mouseleave", mouseleaveHandler);
     
-    // Position camera
+    // Position camera initially
     sigma.getCamera().animate({
       x: 0.5,
       y: 0.5,
       ratio: 1.2
     });
     
-    // Cleanup
+    // Cleanup function
     return () => {
-      // Remove event handlers before killing sigma
+      // Remove all event handlers
+      const mouseCaptor = sigma.getMouseCaptor();
       mouseCaptor.off("mousedown", mousedownHandler);
       mouseCaptor.off("mousemove", mousemoveHandler);
-      mouseCaptor.off("mouseup", endDragHandler);
-      mouseCaptor.off("mouseleave", endDragHandler);
+      mouseCaptor.off("mouseup", mouseupHandler);
+      mouseCaptor.off("mouseleave", mouseleaveHandler);
       
       // Kill sigma instance
       sigma.kill();
       sigmaRef.current = null;
+      graphRef.current = null;
     };
-  }, [graphData, onNodeClick, handleNodeDrag, handleNodeDragEnd]);
-
+  }, [graphData, onNodeClick, isDragging, draggedNode, handleNodeDrag, handleNodeDragEnd]);
+  
   // Filter nodes based on search term
   useEffect(() => {
     if (!sigmaRef.current || !graphRef.current) return;
@@ -290,7 +307,11 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
 
   return (
     <div className="w-full h-full relative">
-      <div ref={containerRef} className="w-full h-full" />
+      <div 
+        ref={containerRef} 
+        className="w-full h-full" 
+        style={{ cursor: isDragging ? 'grabbing' : hoveredNode ? 'grab' : 'default' }}
+      />
       
       <div className="absolute top-4 left-4 z-10">
         <div className="flex items-center bg-white p-2 rounded-md shadow-sm">
@@ -329,7 +350,7 @@ const BubbleChartSigma: React.FC<BubbleChartSigmaProps> = ({
 
       <div className="absolute bottom-4 left-4 z-10">
         <p className="text-sm text-gray-600 bg-white/80 p-2 rounded-md shadow-sm">
-          Tip: Click and drag nodes to interact with the force-directed layout
+          Tip: Click on a node to select it. Click and drag nodes to reposition them.
         </p>
       </div>
     </div>
