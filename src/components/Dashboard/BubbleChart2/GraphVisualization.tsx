@@ -43,7 +43,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     if (id.includes('N3_')) return 'N3_Atrocities_Darfur';
     if (id.includes('N4_')) return 'N4_Political_Fragmentation';
     if (id.includes('N5_')) return 'N5_International_Involvement';
-    return node.family || 'Neutral'; // Fallback to the node's family if available
+    return 'Neutral'; // Default fallback
   };
 
   const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -51,7 +51,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     const size = Math.max(val, 4);
     
     // Determine node category from ID for Sudan news graph
-    const category = getNodeCategory(id);
+    const category = id.includes('N') ? getNodeCategory(id) : family;
     
     // Calculate label size based on zoom level
     const fontSize = Math.max(12 / globalScale, 1.5);
