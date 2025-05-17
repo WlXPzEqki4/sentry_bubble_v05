@@ -3,28 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GraphData } from '@/components/Dashboard/BubbleChart2/types';
 
-// Import the constants directly from the client module
-const SUPABASE_URL = "https://bggxrbrnmrskyackbsax.supabase.co";
-const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnZ3hyYnJubXJza3lhY2tic2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNzc4NTAsImV4cCI6MjA2MDk1Mzg1MH0.oVWzXiKM3AA5ngRqTgzLyOWCguNFV5aTL81wkYO2VUc";
-
-interface SupabaseGraphNode {
-  id: string;
-  family: string;
-  val: number;
-  label?: string;
-}
-
-interface SupabaseGraphLink {
-  source: string;
-  target: string;
-  value: number;
-}
-
-interface SupabaseGraphData {
-  nodes: SupabaseGraphNode[];
-  links: SupabaseGraphLink[];
-}
-
 interface AvailableGraph {
   graph_id: string;
   node_count: number;
@@ -41,20 +19,12 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
   useEffect(() => {
     const fetchAvailableGraphs = async () => {
       try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_available_graphs`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_API_KEY,
-            'Authorization': `Bearer ${SUPABASE_API_KEY}`
-          }
-        });
+        const { data, error } = await supabase.rpc('get_available_graphs');
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch available graphs');
+        if (error) {
+          throw error;
         }
         
-        const data = await response.json();
         setAvailableGraphs(data || []);
       } catch (err) {
         console.error('Error fetching available graphs:', err);
@@ -78,21 +48,13 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
       setError(null);
       
       try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_graph_data`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_API_KEY,
-            'Authorization': `Bearer ${SUPABASE_API_KEY}`
-          },
-          body: JSON.stringify({ p_graph_id: graphId })
+        const { data, error } = await supabase.rpc('get_graph_data', {
+          p_graph_id: graphId
         });
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch graph data');
+        if (error) {
+          throw error;
         }
-        
-        const data = await response.json();
         
         // Transform data to match the GraphData type
         if (data) {
