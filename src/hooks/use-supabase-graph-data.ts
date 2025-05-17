@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GraphData } from '@/components/Dashboard/BubbleChart2/types';
@@ -104,7 +103,8 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
           nodes: (nodesData || []).map((node: any) => ({
             id: node.node_id,
             family: node.family,
-            val: node.val
+            val: node.val,
+            display_name: node.display_name // Ensure display_name is included
           })),
           links: (linksData || []).map((link: any) => ({
             source: link.source,

@@ -3,6 +3,7 @@ export interface Node {
   id: string;
   family: 'Montague' | 'Capulet' | 'Neutral';
   val: number;
+  display_name?: string; // Add display_name as optional property
 }
 
 export interface Link {

@@ -1,4 +1,3 @@
-
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { ForceGraph2D } from 'react-force-graph';
 import { GraphData, ForceConfig } from './types';
@@ -56,7 +55,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   };
 
   const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    const { x, y, id, family, val } = node;
+    const { x, y, id, family, val, display_name } = node;
     // Apply node scaling
     const size = Math.max(val, 4) * nodeScale;
     
@@ -79,13 +78,16 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     
     // Draw label if zoom is sufficient AND showLabels is true
     if (showLabels && (globalScale > 0.4 || val > 10)) {
+      // Use display_name if available, otherwise fall back to id
+      const label = display_name || id;
+      
       ctx.font = `${fontSize}px Sans-Serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'black';
       
       // Add background for text readability
-      const textWidth = ctx.measureText(id).width;
+      const textWidth = ctx.measureText(label).width;
       const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.5);
       
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -96,10 +98,10 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         bckgDimensions[1]
       );
       
-      // Draw text - Fixed issue: the fillText method expects 3 arguments (text, x, y)
+      // Draw text with the display_name
       ctx.fillStyle = '#333';
       ctx.fillText(
-        id, 
+        label,
         x,  // x position
         y + size / 2 + fontSize  // y position
       );
