@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, FileText, ClipboardList, Bot, BarChart, Globe, Database, Network, Share } from 'lucide-react';
+import { LayoutDashboard, FileText, ClipboardList, Bot, BarChart, Globe, Database, Share } from 'lucide-react';
 import MapTab from '@/components/Dashboard/MapTab';
 import WidgetsTab from '@/components/Dashboard/WidgetsTab';
 import NewsTab from '@/components/Dashboard/NewsTab';
@@ -9,7 +9,6 @@ import AITab from '@/components/Dashboard/AITab';
 import ReportsTab from '@/components/Dashboard/ReportsTab';
 import AnalyticsTab from '@/components/Dashboard/AnalyticsTab';
 import Analytics2Tab from '@/components/Dashboard/Analytics2Tab';
-import BubbleChartTab from '@/components/Dashboard/BubbleChartTab';
 import BubbleChart2Tab from '@/components/Dashboard/BubbleChart2Tab';
 
 interface DashboardTabsProps {
@@ -90,13 +89,9 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           <Database className="h-4 w-4" />
           MDM Analytics 2
         </TabsTrigger>
-        <TabsTrigger value="bubblechart" className="gap-2">
-          <Network className="h-4 w-4" />
-          Bubble Chart
-        </TabsTrigger>
         <TabsTrigger value="bubblechart2" className="gap-2">
           <Share className="h-4 w-4" />
-          Bubble Chart 2
+          Bubble Chart
         </TabsTrigger>
       </TabsList>
       
@@ -148,10 +143,6 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
       
       <TabsContent value="analytics2" className="mt-6">
         <Analytics2Tab />
-      </TabsContent>
-
-      <TabsContent value="bubblechart" className="mt-6">
-        <BubbleChartTab userClassificationLevel={user?.classification_levels?.toLowerCase() || 'unclassified'} />
       </TabsContent>
       
       <TabsContent value="bubblechart2" className="mt-6">
