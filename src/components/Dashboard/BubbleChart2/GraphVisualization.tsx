@@ -85,7 +85,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   }, []);
 
   return (
-    <div className="h-[600px] w-full border border-gray-200 rounded-md overflow-hidden">
+    <div className="h-[700px] w-full border border-gray-200 rounded-md overflow-hidden">
       <ForceGraph2D
         ref={forceGraphRef}
         graphData={graphData}

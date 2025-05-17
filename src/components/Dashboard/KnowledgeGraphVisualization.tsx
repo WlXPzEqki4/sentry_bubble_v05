@@ -123,7 +123,7 @@ const KnowledgeGraphVisualization: React.FC<KnowledgeGraphVisualizationProps> = 
 
   return (
     <>
-      <div className="border rounded-lg overflow-hidden bg-white w-full h-full" ref={reactFlowWrapper}>
+      <div className="border rounded-lg overflow-hidden bg-white w-full h-[700px]" ref={reactFlowWrapper}>
         <KnowledgeGraphFlow
           nodes={nodes}
           edges={edges}

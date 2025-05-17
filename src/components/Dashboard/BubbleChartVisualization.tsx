@@ -51,7 +51,7 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
     <Card className="mt-4">
       <CardContent className="p-0">
         <div className="flex flex-col md:flex-row">
-          <div className={`flex-grow ${selectedNode ? 'w-2/3' : 'w-full'}`} style={{ height: '70vh' }}>
+          <div className={`flex-grow ${selectedNode ? 'w-2/3' : 'w-full'}`} style={{ height: '80vh' }}>
             <BubbleChartSigma
               graphData={graphData}
               searchTerm={searchTerm}
@@ -63,7 +63,7 @@ const BubbleChartVisualization: React.FC<BubbleChartVisualizationProps> = ({
           </div>
           
           {selectedNode && (
-            <div className="w-full md:w-1/3 border-l border-gray-200 p-4 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+            <div className="w-full md:w-1/3 border-l border-gray-200 p-4 overflow-y-auto" style={{ maxHeight: '80vh' }}>
               <BubbleChartNodeDetails 
                 node={selectedNode}
                 onClose={resetSelectedNode}

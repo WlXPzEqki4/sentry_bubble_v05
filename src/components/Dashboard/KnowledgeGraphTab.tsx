@@ -31,7 +31,7 @@ const KnowledgeGraphTab: React.FC<KnowledgeGraphTabProps> = ({ userClassificatio
   console.log("Available networks after filtering:", availableNetworks);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-250px)] min-h-[600px]">
+    <div className="flex flex-col h-[calc(100vh-150px)] min-h-[800px]">
       {/* Network Selector */}
       <KnowledgeGraphNetworkSelector 
         networks={availableNetworks}
