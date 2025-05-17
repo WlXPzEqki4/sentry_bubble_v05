@@ -1,8 +1,10 @@
 
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { ForceGraph2D } from 'react-force-graph';
 import { GraphData, ForceConfig } from './types';
 import { getFamilyColor } from '@/utils/colors';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface GraphVisualizationProps {
   graphData: GraphData;
@@ -15,6 +17,8 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   forceConfig,
   forceGraphRef
 }) => {
+  // Add state to control label visibility
+  const [showLabels, setShowLabels] = useState<boolean>(true);
   
   // Apply force changes when configuration changes
   useEffect(() => {
@@ -67,8 +71,8 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     ctx.lineWidth = 0.5;
     ctx.stroke();
     
-    // Draw label if zoom is sufficient
-    if (globalScale > 0.4 || val > 10) {
+    // Draw label if zoom is sufficient AND showLabels is true
+    if (showLabels && (globalScale > 0.4 || val > 10)) {
       ctx.font = `${fontSize}px Sans-Serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -96,19 +100,34 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     }
     
     return true; // Indicate we fully custom rendered the node
-  }, []);
+  }, [showLabels]); // Add showLabels as a dependency
 
   return (
-    <div className="h-[700px] w-full border border-gray-200 rounded-md overflow-hidden">
-      <ForceGraph2D
-        ref={forceGraphRef}
-        graphData={graphData}
-        nodeCanvasObject={nodeCanvasObject}
-        linkWidth={link => (link as any).value / 2}
-        linkColor={() => '#999'}
-        d3VelocityDecay={0.3}
-        cooldownTime={2000}
-      />
+    <div className="flex flex-col h-full w-full">
+      {/* Add the toggle control */}
+      <div className="flex items-center justify-end p-2 bg-white border-b border-gray-200">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="show-labels" className="text-sm cursor-pointer">Show Labels</Label>
+          <Switch 
+            id="show-labels" 
+            checked={showLabels} 
+            onCheckedChange={setShowLabels}
+          />
+        </div>
+      </div>
+
+      {/* Graph visualization */}
+      <div className="flex-grow border border-gray-200 rounded-md overflow-hidden">
+        <ForceGraph2D
+          ref={forceGraphRef}
+          graphData={graphData}
+          nodeCanvasObject={nodeCanvasObject}
+          linkWidth={link => (link as any).value / 2}
+          linkColor={() => '#999'}
+          d3VelocityDecay={0.3}
+          cooldownTime={2000}
+        />
+      </div>
     </div>
   );
 };

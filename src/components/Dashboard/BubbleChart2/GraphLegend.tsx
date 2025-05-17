@@ -1,4 +1,5 @@
 
+// This component is being kept for reference but is no longer being used
 import React from 'react';
 
 interface GraphLegendProps {
