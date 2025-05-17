@@ -19,25 +19,24 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
   useEffect(() => {
     const fetchAvailableGraphs = async () => {
       try {
-        // Use the raw query instead of rpc to avoid type issues
-        const { data, error } = await supabase
+        // Type assertion to work around TypeScript limitations
+        // We know this table exists as it was created in SQL
+        const { data, error } = await (supabase as any)
           .from('graph_nodes')
-          .select('graph_id')
-          .distinct();
+          .select('graph_id');
         
         if (error) {
           throw error;
         }
         
         if (data) {
-          // Process the data to compute node and link counts
+          // Process the data to get unique graph_ids
+          const graphIds = [...new Set(data.map((item: any) => item.graph_id))];
           const graphsList: AvailableGraph[] = [];
           
-          for (const item of data) {
-            const graphId = item.graph_id;
-            
+          for (const graphId of graphIds) {
             // Get node count
-            const { count: nodeCount, error: nodeError } = await supabase
+            const { count: nodeCount, error: nodeError } = await (supabase as any)
               .from('graph_nodes')
               .select('*', { count: 'exact', head: true })
               .eq('graph_id', graphId);
@@ -45,7 +44,7 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
             if (nodeError) throw nodeError;
             
             // Get link count
-            const { count: linkCount, error: linkError } = await supabase
+            const { count: linkCount, error: linkError } = await (supabase as any)
               .from('graph_links')
               .select('*', { count: 'exact', head: true })
               .eq('graph_id', graphId);
@@ -83,30 +82,30 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
       setError(null);
       
       try {
-        // Fetch nodes
-        const { data: nodesData, error: nodesError } = await supabase
+        // Fetch nodes - using type assertion to bypass TypeScript checks
+        const { data: nodesData, error: nodesError } = await (supabase as any)
           .from('graph_nodes')
           .select('node_id, family, val, display_name')
           .eq('graph_id', graphId);
         
         if (nodesError) throw nodesError;
         
-        // Fetch links
-        const { data: linksData, error: linksError } = await supabase
+        // Fetch links - using type assertion to bypass TypeScript checks
+        const { data: linksData, error: linksError } = await (supabase as any)
           .from('graph_links')
           .select('source, target, value')
           .eq('graph_id', graphId);
         
         if (linksError) throw linksError;
         
-        // Transform data to match the GraphData type
+        // Transform data to match the GraphData type with safe type assertions
         const transformedData: GraphData = {
-          nodes: nodesData.map(node => ({
+          nodes: (nodesData || []).map((node: any) => ({
             id: node.node_id,
             family: node.family,
             val: node.val
           })),
-          links: linksData.map(link => ({
+          links: (linksData || []).map((link: any) => ({
             source: link.source,
             target: link.target,
             value: link.value
