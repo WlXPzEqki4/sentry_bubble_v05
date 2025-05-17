@@ -1,5 +1,5 @@
 
-// This component is being kept for reference but is no longer being used
+// This component is kept for reference but is no longer being used
 import React from 'react';
 
 interface GraphLegendProps {
