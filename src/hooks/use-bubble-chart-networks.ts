@@ -29,8 +29,8 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
             classification_level: 'unclassified',
           },
           {
-            id: 'terrorist-network',
-            name: 'Terrorist Network Analysis',
+            id: 'terrorism-network',
+            name: 'Terrorism Network Analysis',
             description: 'Analysis of terrorist network connections and communities',
             classification_level: 'secret',
           },
@@ -59,9 +59,15 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
         
         setNetworkOptions(filteredNetworks);
         
-        // Set default selected network if none is selected
-        if (filteredNetworks.length > 0 && !selectedNetwork) {
-          setSelectedNetwork(filteredNetworks[0].id);
+        // Set default selected network if none is selected or if the previously selected one isn't available
+        if (filteredNetworks.length > 0) {
+          const isCurrentNetworkAvailable = filteredNetworks.some(
+            network => network.id === selectedNetwork
+          );
+          
+          if (!isCurrentNetworkAvailable) {
+            setSelectedNetwork(filteredNetworks[0].id);
+          }
         }
       } catch (error) {
         console.error('Error fetching network options:', error);
@@ -72,7 +78,7 @@ export const useBubbleChartNetworks = (userClassificationLevel: string = 'unclas
     };
 
     fetchNetworks();
-  }, [userClassificationLevel]); // Re-fetch when user classification level changes
+  }, [userClassificationLevel, selectedNetwork]); // Re-fetch when user classification level changes
 
   return {
     networkOptions,

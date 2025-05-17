@@ -4,6 +4,7 @@ import BubbleChartNetworkSelector from './BubbleChartNetworkSelector';
 import BubbleChartVisualization from './BubbleChartVisualization';
 import { useBubbleChartNetworks } from '@/hooks/use-bubble-chart-networks';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Shield } from 'lucide-react';
 
 interface BubbleChartTabProps {
   userClassificationLevel?: string;
@@ -38,12 +39,19 @@ const BubbleChartTab: React.FC<BubbleChartTabProps> = ({ userClassificationLevel
 
       <Alert variant="default" className="bg-gray-50 border-gray-200">
         <div className="flex items-center gap-2">
-          <div className="h-4 w-4 rounded-full bg-blue-500"></div>
-          <AlertTitle>Demo Visualization</AlertTitle>
+          {selectedNetwork.includes('terrorism') ? (
+            <Shield className="h-4 w-4 text-amber-500" />
+          ) : (
+            <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+          )}
+          <AlertTitle>
+            {selectedNetwork.includes('terrorism') ? 'Security Analysis' : 'Demo Visualization'}
+          </AlertTitle>
         </div>
         <AlertDescription>
-          This visualization is using demo network data based on your selection. Node size represents importance, 
-          colors represent family/group affiliations, and edge thickness represents relationship strength.
+          {selectedNetwork.includes('terrorism') 
+            ? 'This visualization shows terrorist network connections and hierarchies. Node size represents importance in the network, colors represent different groups.'
+            : 'This visualization is using demo network data based on your selection. Node size represents importance, colors represent family/group affiliations, and edge thickness represents relationship strength.'}
         </AlertDescription>
       </Alert>
 
