@@ -5,6 +5,7 @@ import { GraphData, ForceConfig } from './types';
 import { getFamilyColor } from '@/utils/colors';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 
 interface GraphVisualizationProps {
   graphData: GraphData;
@@ -19,6 +20,10 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 }) => {
   // Add state to control label visibility
   const [showLabels, setShowLabels] = useState<boolean>(true);
+  
+  // Add state for node and label size scaling
+  const [nodeScale, setNodeScale] = useState<number>(1);
+  const [labelScale, setLabelScale] = useState<number>(1);
   
   // Apply force changes when configuration changes
   useEffect(() => {
@@ -52,13 +57,14 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 
   const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const { x, y, id, family, val } = node;
-    const size = Math.max(val, 4);
+    // Apply node scaling
+    const size = Math.max(val, 4) * nodeScale;
     
     // Determine node category from ID for Sudan news graph
     const category = id.includes('N') ? getNodeCategory(id) : family;
     
-    // Calculate label size based on zoom level
-    const fontSize = Math.max(12 / globalScale, 1.5);
+    // Calculate label size based on zoom level and label scale
+    const fontSize = Math.max(12 / globalScale, 1.5) * labelScale;
     
     // Draw node circle
     ctx.beginPath();
@@ -100,19 +106,47 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     }
     
     return true; // Indicate we fully custom rendered the node
-  }, [showLabels]); // Add showLabels as dependency
+  }, [showLabels, nodeScale, labelScale]); // Add nodeScale and labelScale as dependencies
 
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Add the toggle controls */}
-      <div className="flex items-center justify-end p-2 bg-white border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <Label htmlFor="show-labels" className="text-sm cursor-pointer">Show Labels</Label>
-          <Switch 
-            id="show-labels" 
-            checked={showLabels} 
-            onCheckedChange={setShowLabels}
-          />
+      {/* Move toggle controls to the left and add size sliders */}
+      <div className="flex items-center justify-start p-2 bg-white border-b border-gray-200">
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="show-labels" className="text-sm cursor-pointer">Show Labels</Label>
+            <Switch 
+              id="show-labels" 
+              checked={showLabels} 
+              onCheckedChange={setShowLabels}
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2 w-48">
+            <Label htmlFor="node-size" className="text-sm min-w-20">Node Size: {nodeScale.toFixed(1)}x</Label>
+            <Slider
+              id="node-size"
+              min={0.5}
+              max={3}
+              step={0.1}
+              value={[nodeScale]}
+              onValueChange={(value) => setNodeScale(value[0])}
+              className="w-full"
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2 w-48">
+            <Label htmlFor="label-size" className="text-sm min-w-20">Label Size: {labelScale.toFixed(1)}x</Label>
+            <Slider
+              id="label-size"
+              min={0.5}
+              max={3}
+              step={0.1}
+              value={[labelScale]}
+              onValueChange={(value) => setLabelScale(value[0])}
+              className="w-full"
+            />
+          </div>
         </div>
       </div>
 
