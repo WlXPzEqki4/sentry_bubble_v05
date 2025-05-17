@@ -5,8 +5,6 @@ import { GraphData, ForceConfig } from './types';
 import { getFamilyColor } from '@/utils/colors';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Pin } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface GraphVisualizationProps {
   graphData: GraphData;
@@ -21,10 +19,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 }) => {
   // Add state to control label visibility
   const [showLabels, setShowLabels] = useState<boolean>(true);
-  // Add state to track pinned nodes
-  const [pinnedNodes, setPinnedNodes] = useState<Set<string>>(new Set());
-  // Add state for currently selected node
-  const [selectedNode, setSelectedNode] = useState<any>(null);
   
   // Apply force changes when configuration changes
   useEffect(() => {
@@ -56,38 +50,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     return 'Neutral'; // Default fallback
   };
 
-  // Handle node click for selecting and pinning
-  const handleNodeClick = useCallback((node: any) => {
-    setSelectedNode(node);
-  }, []);
-
-  // Handle pinning the currently selected node
-  const handlePinNode = useCallback(() => {
-    if (!selectedNode) return;
-
-    const newPinnedNodes = new Set(pinnedNodes);
-    
-    // If already pinned, unpin it
-    if (newPinnedNodes.has(selectedNode.id)) {
-      newPinnedNodes.delete(selectedNode.id);
-      // Update the node's fx and fy to be undefined (unpinned)
-      selectedNode.fx = undefined;
-      selectedNode.fy = undefined;
-    } else {
-      // Pin the node at its current position
-      newPinnedNodes.add(selectedNode.id);
-      selectedNode.fx = selectedNode.x;
-      selectedNode.fy = selectedNode.y;
-    }
-    
-    setPinnedNodes(newPinnedNodes);
-    
-    // Reheat the simulation to apply changes
-    if (forceGraphRef.current) {
-      forceGraphRef.current.d3ReheatSimulation();
-    }
-  }, [selectedNode, pinnedNodes, forceGraphRef]);
-
   const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const { x, y, id, family, val } = node;
     const size = Math.max(val, 4);
@@ -108,21 +70,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = 0.5;
     ctx.stroke();
-    
-    // Draw a pin indicator for pinned nodes
-    if (pinnedNodes.has(id)) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.beginPath();
-      ctx.arc(x, y, size / 6, 0, 2 * Math.PI);
-      ctx.fill();
-    }
-    
-    // Highlight selected node
-    if (selectedNode && selectedNode.id === id) {
-      ctx.strokeStyle = '#ff6600';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
     
     // Draw label if zoom is sufficient AND showLabels is true
     if (showLabels && (globalScale > 0.4 || val > 10)) {
@@ -147,38 +94,24 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       ctx.fillStyle = '#333';
       ctx.fillText(
         id, 
-        x, 
         y + size / 2 + fontSize
       );
     }
     
     return true; // Indicate we fully custom rendered the node
-  }, [showLabels, pinnedNodes, selectedNode]); // Add dependencies
+  }, [showLabels]); // Add showLabels as dependency
 
   return (
     <div className="flex flex-col h-full w-full">
       {/* Add the toggle controls */}
       <div className="flex items-center justify-end p-2 bg-white border-b border-gray-200">
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="show-labels" className="text-sm cursor-pointer">Show Labels</Label>
-            <Switch 
-              id="show-labels" 
-              checked={showLabels} 
-              onCheckedChange={setShowLabels}
-            />
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handlePinNode}
-            disabled={!selectedNode}
-            className="flex items-center gap-1"
-          >
-            <Pin className="h-4 w-4" />
-            {pinnedNodes.has(selectedNode?.id || '') ? 'Unpin' : 'Pin'} Node
-          </Button>
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="show-labels" className="text-sm cursor-pointer">Show Labels</Label>
+          <Switch 
+            id="show-labels" 
+            checked={showLabels} 
+            onCheckedChange={setShowLabels}
+          />
         </div>
       </div>
 
@@ -189,10 +122,9 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
           graphData={graphData}
           nodeCanvasObject={nodeCanvasObject}
           linkWidth={link => (link as any).value / 2}
-          linkColor={() => '#F1F1F1'} // Lighter gray color for edges
+          linkColor={() => '#888888'} // Darker gray color for edges
           d3VelocityDecay={0.3}
           cooldownTime={2000}
-          onNodeClick={handleNodeClick}
         />
       </div>
     </div>
