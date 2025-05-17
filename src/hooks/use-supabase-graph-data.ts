@@ -21,17 +21,26 @@ interface SupabaseGraphData {
   links: SupabaseGraphLink[];
 }
 
+interface AvailableGraph {
+  graph_id: string;
+  node_count: number;
+  link_count: number;
+}
+
 export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const [availableGraphs, setAvailableGraphs] = useState<{graph_id: string, node_count: number, link_count: number}[]>([]);
+  const [availableGraphs, setAvailableGraphs] = useState<AvailableGraph[]>([]);
   
   // Fetch available graphs
   useEffect(() => {
     const fetchAvailableGraphs = async () => {
       try {
-        const { data, error } = await supabase.rpc('get_available_graphs');
+        // Use a properly typed approach with the generic parameter
+        const { data, error } = await supabase
+          .rpc('get_available_graphs')
+          .returns<AvailableGraph[]>();
         
         if (error) throw error;
         
@@ -58,9 +67,12 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
       setError(null);
       
       try {
-        const { data, error } = await supabase.rpc('get_graph_data', {
-          p_graph_id: graphId
-        });
+        // Use a properly typed approach with the generic parameter
+        const { data, error } = await supabase
+          .rpc('get_graph_data', {
+            p_graph_id: graphId
+          })
+          .returns<GraphData>();
         
         if (error) throw error;
         
