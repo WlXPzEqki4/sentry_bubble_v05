@@ -90,11 +90,12 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         bckgDimensions[1]
       );
       
-      // Draw text
+      // Draw text - Fixed issue: the fillText method expects 3 arguments (text, x, y)
       ctx.fillStyle = '#333';
       ctx.fillText(
         id, 
-        y + size / 2 + fontSize
+        x,  // x position
+        y + size / 2 + fontSize  // y position
       );
     }
     
