@@ -1,4 +1,3 @@
-
 export interface Node {
   id: string;
   family: 'Montague' | 'Capulet' | 'Neutral';
@@ -72,3 +71,10 @@ export const getFamilyColor = (family: string): string => {
     default: return '#999';
   }
 };
+
+// New type for available graph data from Supabase
+export interface AvailableGraph {
+  graph_id: string;
+  node_count: number;
+  link_count: number;
+}

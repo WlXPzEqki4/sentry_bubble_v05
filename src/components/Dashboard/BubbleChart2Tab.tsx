@@ -1,72 +1,30 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { GraphData, ForceConfig, layoutPresets } from './BubbleChart2/types';
 import GraphControls from './BubbleChart2/GraphControls';
 import GraphVisualization from './BubbleChart2/GraphVisualization';
 import GraphLegend from './BubbleChart2/GraphLegend';
+import { useSupabaseGraphData } from '@/hooks/use-supabase-graph-data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 const BubbleChart2Tab: React.FC = () => {
   // Reference to the ForceGraph instance
   const forceGraphRef = useRef<any>(null);
   
-  const [graphData] = useState<GraphData>({
-    nodes: [
-      { id: "Romeo", family: "Montague", val: 20 },
-      { id: "Montague", family: "Montague", val: 15 },
-      { id: "Lady Montague", family: "Montague", val: 10 },
-      { id: "Benvolio", family: "Montague", val: 12 },
-      { id: "Mercutio", family: "Montague", val: 18 },
-      { id: "Juliet", family: "Capulet", val: 20 },
-      { id: "Capulet", family: "Capulet", val: 15 },
-      { id: "Lady Capulet", family: "Capulet", val: 10 },
-      { id: "Tybalt", family: "Capulet", val: 16 },
-      { id: "Nurse", family: "Capulet", val: 14 },
-      { id: "Prince Escalus", family: "Neutral", val: 18 },
-      { id: "Paris", family: "Neutral", val: 12 },
-      { id: "Friar Lawrence", family: "Neutral", val: 16 },
-      { id: "Rosaline", family: "Capulet", val: 8 },
-      { id: "Balthasar", family: "Montague", val: 8 },
-      { id: "Sampson", family: "Capulet", val: 6 },
-      { id: "Gregory", family: "Capulet", val: 6 },
-      { id: "Peter", family: "Neutral", val: 5 },
-      { id: "Abraham", family: "Montague", val: 5 }
-    ],
-    links: [
-      { source: "Romeo", target: "Juliet", value: 10 },
-      { source: "Romeo", target: "Montague", value: 5 },
-      { source: "Romeo", target: "Mercutio", value: 8 },
-      { source: "Romeo", target: "Benvolio", value: 7 },
-      { source: "Romeo", target: "Friar Lawrence", value: 6 },
-      { source: "Romeo", target: "Balthasar", value: 3 },
-      { source: "Romeo", target: "Rosaline", value: 2 },
-      { source: "Romeo", target: "Tybalt", value: 4 },
-      { source: "Juliet", target: "Capulet", value: 5 },
-      { source: "Juliet", target: "Lady Capulet", value: 4 },
-      { source: "Juliet", target: "Nurse", value: 7 },
-      { source: "Juliet", target: "Friar Lawrence", value: 6 },
-      { source: "Juliet", target: "Tybalt", value: 3 },
-      { source: "Juliet", target: "Paris", value: 4 },
-      { source: "Montague", target: "Lady Montague", value: 6 },
-      { source: "Montague", target: "Benvolio", value: 3 },
-      { source: "Capulet", target: "Lady Capulet", value: 6 },
-      { source: "Capulet", target: "Tybalt", value: 4 },
-      { source: "Capulet", target: "Paris", value: 3 },
-      { source: "Capulet", target: "Prince Escalus", value: 2 },
-      { source: "Mercutio", target: "Benvolio", value: 5 },
-      { source: "Mercutio", target: "Tybalt", value: 5 },
-      { source: "Mercutio", target: "Paris", value: 2 },
-      { source: "Mercutio", target: "Prince Escalus", value: 3 },
-      { source: "Nurse", target: "Friar Lawrence", value: 2 },
-      { source: "Tybalt", target: "Benvolio", value: 3 },
-      { source: "Prince Escalus", target: "Paris", value: 3 },
-      { source: "Sampson", target: "Gregory", value: 4 },
-      { source: "Sampson", target: "Abraham", value: 2 },
-      { source: "Gregory", target: "Abraham", value: 2 },
-      { source: "Paris", target: "Friar Lawrence", value: 2 }
-    ]
-  });
-
+  // State for graph selection
+  const [selectedGraphId, setSelectedGraphId] = useState<string>('romeo-and-juliet');
+  
+  // Use the new Supabase hook
+  const { 
+    graphData, 
+    isLoading, 
+    error,
+    availableGraphs 
+  } = useSupabaseGraphData(selectedGraphId);
+  
   // Selected layout preset
   const [selectedLayout, setSelectedLayout] = useState<string>("default");
 
@@ -109,29 +67,71 @@ const BubbleChart2Tab: React.FC = () => {
       <Card className="shadow-sm border border-gray-100">
         <CardContent className="p-6">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-1">Romeo and Juliet Character Network</h2>
-            <p className="text-sm text-gray-500">
-              Force-directed graph showing relationships between characters from Shakespeare's Romeo and Juliet.
+            <h2 className="text-2xl font-bold mb-1">Character Network Visualization</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Force-directed graph showing relationships between characters.
             </p>
+            
+            {availableGraphs.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Network
+                </label>
+                <Select
+                  value={selectedGraphId}
+                  onValueChange={setSelectedGraphId}
+                >
+                  <SelectTrigger className="w-full md:w-[250px]">
+                    <SelectValue placeholder="Select a graph" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableGraphs.map((graph) => (
+                      <SelectItem key={graph.graph_id} value={graph.graph_id}>
+                        {graph.graph_id} ({graph.node_count} nodes, {graph.link_count} links)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           
-          {/* Layout controls component */}
-          <GraphControls
-            selectedLayout={selectedLayout}
-            onLayoutChange={handleLayoutChange}
-            forceConfig={forceConfig}
-            onForceConfigChange={handleForceConfigChange}
-          />
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>
+                Error loading graph data: {error.message}
+              </AlertDescription>
+            </Alert>
+          )}
           
-          {/* Graph visualization component */}
-          <GraphVisualization
-            graphData={graphData}
-            forceConfig={forceConfig}
-            forceGraphRef={forceGraphRef}
-          />
-          
-          {/* Legend component */}
-          <GraphLegend legends={legendItems} />
+          {isLoading ? (
+            <div className="flex items-center justify-center h-[600px]">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-500">Loading graph data...</span>
+            </div>
+          ) : (
+            <>
+              {/* Layout controls component */}
+              <GraphControls
+                selectedLayout={selectedLayout}
+                onLayoutChange={handleLayoutChange}
+                forceConfig={forceConfig}
+                onForceConfigChange={handleForceConfigChange}
+              />
+              
+              {/* Graph visualization component */}
+              {graphData && (
+                <GraphVisualization
+                  graphData={graphData}
+                  forceConfig={forceConfig}
+                  forceGraphRef={forceGraphRef}
+                />
+              )}
+              
+              {/* Legend component */}
+              <GraphLegend legends={legendItems} />
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
