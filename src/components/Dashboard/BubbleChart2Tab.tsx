@@ -67,33 +67,46 @@ const BubbleChart2Tab: React.FC = () => {
       <Card className="shadow-sm border border-gray-100">
         <CardContent className="p-6">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-1">Character Network Visualization</h2>
+            <h2 className="text-2xl font-bold mb-1">Narrative Intelligence Map</h2>
             <p className="text-sm text-gray-500 mb-4">
-              Force-directed graph showing relationships between characters.
+              Force-directed graph visualizing narrative intelligence connections and influence networks.
             </p>
             
-            {availableGraphs.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Network
-                </label>
-                <Select
-                  value={selectedGraphId}
-                  onValueChange={setSelectedGraphId}
-                >
-                  <SelectTrigger className="w-full md:w-[250px]">
-                    <SelectValue placeholder="Select a graph" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableGraphs.map((graph) => (
-                      <SelectItem key={graph.graph_id} value={graph.graph_id}>
-                        {graph.graph_id} ({graph.node_count} nodes, {graph.link_count} links)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* Controls section - now with network selector and layout controls side by side */}
+            <div className="flex flex-col md:flex-row md:items-center md:gap-6 mb-4">
+              {availableGraphs.length > 0 && (
+                <div className="mb-4 md:mb-0">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Network
+                  </label>
+                  <Select
+                    value={selectedGraphId}
+                    onValueChange={setSelectedGraphId}
+                  >
+                    <SelectTrigger className="w-full md:w-[250px]">
+                      <SelectValue placeholder="Select a graph" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableGraphs.map((graph) => (
+                        <SelectItem key={graph.graph_id} value={graph.graph_id}>
+                          {graph.graph_id} ({graph.node_count} nodes, {graph.link_count} links)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              {/* Layout controls component - now positioned side by side with network selector */}
+              {!isLoading && !error && graphData && (
+                <GraphControls
+                  selectedLayout={selectedLayout}
+                  onLayoutChange={handleLayoutChange}
+                  forceConfig={forceConfig}
+                  onForceConfigChange={handleForceConfigChange}
+                />
+              )}
+            </div>
           </div>
           
           {error && (
@@ -111,14 +124,6 @@ const BubbleChart2Tab: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* Layout controls component */}
-              <GraphControls
-                selectedLayout={selectedLayout}
-                onLayoutChange={handleLayoutChange}
-                forceConfig={forceConfig}
-                onForceConfigChange={handleForceConfigChange}
-              />
-              
               {/* Graph visualization component */}
               {graphData && (
                 <GraphVisualization
