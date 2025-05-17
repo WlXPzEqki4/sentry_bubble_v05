@@ -132,7 +132,7 @@ const BubbleChart2Tab: React.FC = () => {
                       min="-300"
                       max="-10"
                       value={forceConfig.chargeStrength}
-                      onChange={(e) => onForceConfigChange('chargeStrength', parseInt(e.target.value))}
+                      onChange={(e) => handleForceConfigChange('chargeStrength', parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     />
                     <p className="text-xs text-gray-500 mt-1">Controls node repulsion (negative values) or attraction (positive)</p>
@@ -146,7 +146,7 @@ const BubbleChart2Tab: React.FC = () => {
                       min="10"
                       max="100"
                       value={forceConfig.linkDistance}
-                      onChange={(e) => onForceConfigChange('linkDistance', parseInt(e.target.value))}
+                      onChange={(e) => handleForceConfigChange('linkDistance', parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     />
                     <p className="text-xs text-gray-500 mt-1">Target distance between connected nodes</p>
@@ -161,7 +161,7 @@ const BubbleChart2Tab: React.FC = () => {
                       max="1"
                       step="0.05"
                       value={forceConfig.centerStrength}
-                      onChange={(e) => onForceConfigChange('centerStrength', parseFloat(e.target.value))}
+                      onChange={(e) => handleForceConfigChange('centerStrength', parseFloat(e.target.value))}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     />
                     <p className="text-xs text-gray-500 mt-1">Strength of central gravity (pulls nodes to center)</p>
