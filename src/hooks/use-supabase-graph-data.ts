@@ -37,10 +37,12 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
   useEffect(() => {
     const fetchAvailableGraphs = async () => {
       try {
-        // Use a properly typed approach with the generic parameter
+        // Type assertion approach to work around type limitations
         const { data, error } = await supabase
-          .rpc('get_available_graphs')
-          .returns<AvailableGraph[]>();
+          .rpc('get_available_graphs') as unknown as { 
+            data: AvailableGraph[] | null; 
+            error: Error | null 
+          };
         
         if (error) throw error;
         
@@ -67,18 +69,20 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
       setError(null);
       
       try {
-        // Use a properly typed approach with the generic parameter
+        // Type assertion approach to work around type limitations
         const { data, error } = await supabase
           .rpc('get_graph_data', {
             p_graph_id: graphId
-          })
-          .returns<GraphData>();
+          }) as unknown as {
+            data: GraphData | null;
+            error: Error | null
+          };
         
         if (error) throw error;
         
         // Transform data to match the GraphData type
         if (data) {
-          setGraphData(data as GraphData);
+          setGraphData(data);
         } else {
           setGraphData({ nodes: [], links: [] });
         }
