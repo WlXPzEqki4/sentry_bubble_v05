@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { GraphData, ForceConfig, layoutPresets } from './BubbleChart2/types';
-import GraphControls from './BubbleChart2/GraphControls';
 import GraphVisualization from './BubbleChart2/GraphVisualization';
 import GraphLegend from './BubbleChart2/GraphLegend';
 import { useSupabaseGraphData } from '@/hooks/use-supabase-graph-data';
@@ -55,12 +54,25 @@ const BubbleChart2Tab: React.FC = () => {
     }
   };
 
-  // Define legend items
-  const legendItems = [
-    { color: '#e6550d', label: 'Montague Family' },
-    { color: '#756bb1', label: 'Capulet Family' },
-    { color: '#31a354', label: 'Neutral Characters' },
-  ];
+  // Define legend items based on the selected graph
+  const getLegendItems = () => {
+    if (selectedGraphId.includes('sudan')) {
+      return [
+        { color: '#E11D48', label: 'N1 Drone Warfare' },
+        { color: '#2563EB', label: 'N2 Humanitarian Crisis' },
+        { color: '#7C3AED', label: 'N3 Atrocities Darfur' },
+        { color: '#F59E0B', label: 'N4 Political Fragmentation' },
+        { color: '#10B981', label: 'N5 International Involvement' },
+      ];
+    } else {
+      // Default legend for Romeo and Juliet
+      return [
+        { color: '#e6550d', label: 'Montague Family' },
+        { color: '#756bb1', label: 'Capulet Family' },
+        { color: '#31a354', label: 'Neutral Characters' },
+      ];
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -195,8 +207,8 @@ const BubbleChart2Tab: React.FC = () => {
                 />
               )}
               
-              {/* Legend component */}
-              <GraphLegend legends={legendItems} />
+              {/* Legend component with dynamic items based on selected graph */}
+              <GraphLegend legends={getLegendItems()} />
             </>
           )}
         </CardContent>

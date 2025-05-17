@@ -1,7 +1,8 @@
 
 import React, { useCallback, useRef, useEffect } from 'react';
 import { ForceGraph2D } from 'react-force-graph';
-import { GraphData, ForceConfig, getFamilyColor } from './types';
+import { GraphData, ForceConfig } from './types';
+import { getFamilyColor } from '@/utils/colors';
 
 interface GraphVisualizationProps {
   graphData: GraphData;
@@ -35,16 +36,29 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     fg.d3ReheatSimulation();
   }, [forceConfig, forceGraphRef]);
 
+  // Determine the category from node ID
+  const getNodeCategory = (id: string): string => {
+    if (id.includes('N1_')) return 'N1_Drone_Warfare';
+    if (id.includes('N2_')) return 'N2_Humanitarian_Crisis';
+    if (id.includes('N3_')) return 'N3_Atrocities_Darfur';
+    if (id.includes('N4_')) return 'N4_Political_Fragmentation';
+    if (id.includes('N5_')) return 'N5_International_Involvement';
+    return node.family || 'Neutral'; // Fallback to the node's family if available
+  };
+
   const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const { x, y, id, family, val } = node;
     const size = Math.max(val, 4);
+    
+    // Determine node category from ID for Sudan news graph
+    const category = getNodeCategory(id);
     
     // Calculate label size based on zoom level
     const fontSize = Math.max(12 / globalScale, 1.5);
     
     // Draw node circle
     ctx.beginPath();
-    ctx.fillStyle = getFamilyColor(family);
+    ctx.fillStyle = getFamilyColor(category);
     ctx.arc(x, y, size / 3, 0, 2 * Math.PI);
     ctx.fill();
     

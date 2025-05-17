@@ -24,6 +24,13 @@ const FAMILY_COLORS: Record<string, string> = {
   'Alliance': '#F59E0B',          // Amber
   'Canada': '#6366F1',            // Indigo
   'Australia': '#10B981',         // Green
+  
+  // Sudan news network categories
+  'N1_Drone_Warfare': '#E11D48',          // Red
+  'N2_Humanitarian_Crisis': '#2563EB',     // Blue
+  'N3_Atrocities_Darfur': '#7C3AED',       // Purple
+  'N4_Political_Fragmentation': '#F59E0B', // Amber
+  'N5_International_Involvement': '#10B981' // Green
 };
 
 // Default color when family is not specified
@@ -32,5 +39,14 @@ const DEFAULT_COLOR = '#8B5CF6'; // Purple
 // Function to get color based on family name
 export const getFamilyColor = (family: string): string => {
   if (!family) return DEFAULT_COLOR;
+  
+  // Check if the family string contains any of the category prefixes
+  const categories = Object.keys(FAMILY_COLORS);
+  for (const category of categories) {
+    if (family.includes(category)) {
+      return FAMILY_COLORS[category];
+    }
+  }
+  
   return FAMILY_COLORS[family] || DEFAULT_COLOR;
 };
