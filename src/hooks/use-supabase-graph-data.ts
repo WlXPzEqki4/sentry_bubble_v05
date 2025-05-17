@@ -51,8 +51,9 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
               
             if (linkError) throw linkError;
             
+            // Ensure graphId is treated as a string
             graphsList.push({
-              graph_id: graphId,
+              graph_id: String(graphId),
               node_count: nodeCount || 0,
               link_count: linkCount || 0
             });
