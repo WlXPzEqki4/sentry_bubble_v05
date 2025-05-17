@@ -37,15 +37,20 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
   useEffect(() => {
     const fetchAvailableGraphs = async () => {
       try {
-        // Type assertion approach to work around type limitations
-        const { data, error } = await supabase
-          .rpc('get_available_graphs') as unknown as { 
-            data: AvailableGraph[] | null; 
-            error: Error | null 
-          };
+        const response = await fetch(`${supabase.supabaseUrl}/rest/v1/rpc/get_available_graphs`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabase.supabaseKey,
+            'Authorization': `Bearer ${supabase.supabaseKey}`
+          }
+        });
         
-        if (error) throw error;
+        if (!response.ok) {
+          throw new Error('Failed to fetch available graphs');
+        }
         
+        const data = await response.json();
         setAvailableGraphs(data || []);
       } catch (err) {
         console.error('Error fetching available graphs:', err);
@@ -69,16 +74,21 @@ export const useSupabaseGraphData = (graphId: string = 'romeo-and-juliet') => {
       setError(null);
       
       try {
-        // Type assertion approach to work around type limitations
-        const { data, error } = await supabase
-          .rpc('get_graph_data', {
-            p_graph_id: graphId
-          }) as unknown as {
-            data: GraphData | null;
-            error: Error | null
-          };
+        const response = await fetch(`${supabase.supabaseUrl}/rest/v1/rpc/get_graph_data`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabase.supabaseKey,
+            'Authorization': `Bearer ${supabase.supabaseKey}`
+          },
+          body: JSON.stringify({ p_graph_id: graphId })
+        });
         
-        if (error) throw error;
+        if (!response.ok) {
+          throw new Error('Failed to fetch graph data');
+        }
+        
+        const data = await response.json();
         
         // Transform data to match the GraphData type
         if (data) {
